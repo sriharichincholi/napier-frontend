@@ -20,7 +20,7 @@ export default function Home() {
       process.env.NEXT_PUBLIC_API_URL ||
       "https://napier-backend.onrender.com";
 
-    fetch(`${API_URL}/api/v1/index-trends`)
+fetch(`${API_URL}/api/v1/index-trends/`)
       .then((res) => res.json())
       .then((resData) => {
         // 2. Extract array from response payload
