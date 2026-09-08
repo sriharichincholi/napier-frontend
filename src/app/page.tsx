@@ -73,7 +73,7 @@ export default function Home() {
     return AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0];
   }, [selectedRoute]);
 
-  // Generate target departure date for carrier deep-links safely
+  // Generate target departure date for carrier deep-links
   const targetDateStr = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedLeadTime);
@@ -127,7 +127,7 @@ export default function Home() {
         console.error("Fetch error:", err);
         const errorMessage = err instanceof Error ? err.message : "Failed to connect to index service";
         setError(errorMessage);
-      } font-medium finally {
+      } finally {
         setLoading(false);
       }
     };
