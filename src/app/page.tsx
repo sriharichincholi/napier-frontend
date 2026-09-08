@@ -14,6 +14,22 @@ import {
 type TimeFrame = "7d" | "30d" | "90d" | "ALL";
 type MetricView = "price" | "index";
 
+interface IndexDataPoint {
+  calculation_date: string;
+  jevons_index_value?: number;
+  jevons_index?: number;
+  estimated_price?: number;
+  [key: string]: unknown;
+}
+
+interface AirlineCard {
+  name: string;
+  code: string;
+  color: string;
+  price: number;
+  url: string;
+}
+
 const AVAILABLE_ROUTES = [
   { code: "DEL-BOM", label: "Delhi → Mumbai", origin: "DEL", dest: "BOM" },
   { code: "DEL-BLR", label: "Delhi → Bengaluru", origin: "DEL", dest: "BLR" },
@@ -32,7 +48,7 @@ const LEAD_WINDOWS = [
 ];
 
 export default function Home() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<IndexDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,22 +60,32 @@ export default function Home() {
 
   // Chatbot State
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "ai" | "user"; text: string }>>([
-    { sender: "ai", text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes." },
+    {
+      sender: "ai",
+      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes.",
+    },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
 
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const activeRouteObj = useMemo(() => {
     return AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0];
   }, [selectedRoute]);
 
-  // Generate target departure date for carrier deep-links
+  // Generate target departure date for carrier deep-links safely
   const targetDateStr = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedLeadTime);
     return d.toISOString().split("T")[0];
   }, [selectedLeadTime]);
+
+  // Auto scroll chat window when messages update
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     const baseUrl =
@@ -83,7 +109,7 @@ export default function Home() {
         if (Array.isArray(list) && list.length > 0) {
           const BASE_AIRFARE_INR = 4500;
 
-          const formatted = list.map((item: any) => {
+          const formatted: IndexDataPoint[] = list.map((item: IndexDataPoint) => {
             const rawIndex = item.jevons_index_value ?? item.jevons_index ?? 100;
             const estimatedPrice = Math.round(BASE_AIRFARE_INR * (rawIndex / 100));
 
@@ -97,10 +123,11 @@ export default function Home() {
         } else {
           setData([]);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Fetch error:", err);
-        setError(err.message || "Failed to connect to index service");
-      } finally {
+        const errorMessage = err instanceof Error ? err.message : "Failed to connect to index service";
+        setError(errorMessage);
+      } font-medium finally {
         setLoading(false);
       }
     };
@@ -123,26 +150,26 @@ export default function Home() {
     ? filteredData[0]
     : { estimated_price: 5000, jevons_index: 100 };
 
-  const currentPrice = latestItem.estimated_price;
-  const currentIndex = latestItem.jevons_index;
+  const currentPrice = latestItem.estimated_price ?? 5000;
+  const currentIndex = latestItem.jevons_index ?? 100;
 
   const minPrice = filteredData.length
-    ? Math.min(...filteredData.map((d) => d.estimated_price))
+    ? Math.min(...filteredData.map((d) => d.estimated_price ?? 5000))
     : 5000;
   const maxPrice = filteredData.length
-    ? Math.max(...filteredData.map((d) => d.estimated_price))
+    ? Math.max(...filteredData.map((d) => d.estimated_price ?? 5000))
     : 5000;
 
   const periodChange = filteredData.length
     ? (
-        ((latestItem.estimated_price - firstItem.estimated_price) /
-          firstItem.estimated_price) *
+        (((latestItem.estimated_price ?? 5000) - (firstItem.estimated_price ?? 5000)) /
+          (firstItem.estimated_price ?? 5000)) *
         100
       ).toFixed(1)
     : "0.0";
 
   // Dynamic airline live cards with verification hyperlinked deep-links
-  const airlineCards = useMemo(() => {
+  const airlineCards: AirlineCard[] = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
     return [
@@ -205,7 +232,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
       {/* HEADER SECTION */}
       <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
@@ -217,7 +243,6 @@ export default function Home() {
       </header>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
-        
         {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX & HYPERLINKS */}
         <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b border-slate-800/80 pb-3">
@@ -269,11 +294,13 @@ export default function Home() {
 
         {/* PARAMETER CONTROL BAR */}
         <section className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          
           {/* City-Pair Route Dropdown */}
           <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <label className="text-xs text-slate-400 font-medium">City-Pair Route</label>
+            <label htmlFor="route-select" className="text-xs text-slate-400 font-medium">
+              City-Pair Route
+            </label>
             <select
+              id="route-select"
               value={selectedRoute}
               onChange={(e) => setSelectedRoute(e.target.value)}
               className="bg-slate-950 border border-slate-800 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -288,11 +315,12 @@ export default function Home() {
 
           {/* Advance Purchase Window */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Advance Purchase Window</label>
+            <span className="text-xs text-slate-400 font-medium">Advance Purchase Window</span>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               {LEAD_WINDOWS.map((lw) => (
                 <button
                   key={lw.value}
+                  type="button"
                   onClick={() => setSelectedLeadTime(lw.value)}
                   className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                     selectedLeadTime === lw.value
@@ -308,9 +336,10 @@ export default function Home() {
 
           {/* Metric Toggle */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Metric Display</label>
+            <span className="text-xs text-slate-400 font-medium">Metric Display</span>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               <button
+                type="button"
                 onClick={() => setMetricView("price")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "price"
@@ -321,6 +350,7 @@ export default function Home() {
                 Price (₹)
               </button>
               <button
+                type="button"
                 onClick={() => setMetricView("index")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "index"
@@ -335,11 +365,12 @@ export default function Home() {
 
           {/* Timeframe Selector */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Timeframe</label>
+            <span className="text-xs text-slate-400 font-medium">Timeframe</span>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               {(["7d", "30d", "90d", "ALL"] as TimeFrame[]).map((tf) => (
                 <button
                   key={tf}
+                  type="button"
                   onClick={() => setTimeframe(tf)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                     timeframe === tf
@@ -352,12 +383,10 @@ export default function Home() {
               ))}
             </div>
           </div>
-
         </section>
 
-        {/* MAIN WORKSPACE GRID: Left = Chart & Past History | Right = DB Telematics & AI Chatbot */}
+        {/* MAIN WORKSPACE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          
           {/* LEFT 3 COLUMNS: PAST HISTORY & RECHARTS GRAPH */}
           <main className="lg:col-span-3 border border-slate-800 rounded-2xl p-5 bg-slate-900/50 flex flex-col justify-between space-y-6">
             <div>
@@ -435,8 +464,10 @@ export default function Home() {
                           borderColor: "#334155",
                           borderRadius: "0.75rem",
                         }}
-                        formatter={(val: any) => [
-                          metricView === "price" ? `₹${val.toLocaleString("en-IN")}` : val,
+                        formatter={(val: unknown) => [
+                          metricView === "price"
+                            ? `₹${Number(val).toLocaleString("en-IN")}`
+                            : val,
                           metricView === "price" ? "Estimated Fare" : "Jevons Index",
                         ]}
                       />
@@ -455,7 +486,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scroll Indicator for Real Time Data */}
+            {/* Scroll Indicator */}
             <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-2">
                 <span className="animate-bounce">↓</span>
@@ -465,9 +496,8 @@ export default function Home() {
             </div>
           </main>
 
-          {/* RIGHT 1 COLUMN: SIDEBAR (DB STATUS + AI CHATBOT + SCRAPER TRIGGER) */}
+          {/* RIGHT 1 COLUMN: SIDEBAR */}
           <aside className="lg:col-span-1 flex flex-col gap-6">
-            
             {/* STATUS OF DB AND ROUTE DATA */}
             <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50">
               <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
@@ -499,10 +529,10 @@ export default function Home() {
                 <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
                   AI Assistant / Chatbot
                 </h4>
-                
+
                 {/* Chat window */}
                 <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                  <div className="overflow-y-auto space-y-2 pr-1 text-xs">
+                  <div ref={chatContainerRef} className="overflow-y-auto space-y-2 pr-1 text-xs">
                     {chatMessages.map((msg, i) => (
                       <div
                         key={i}
@@ -537,6 +567,7 @@ export default function Home() {
 
               {/* Get More Data Trigger */}
               <button
+                type="button"
                 onClick={() => alert(`Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`)}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/40"
               >
@@ -544,10 +575,8 @@ export default function Home() {
                 <span>➔</span>
               </button>
             </div>
-
           </aside>
         </div>
-
       </div>
     </div>
   );
