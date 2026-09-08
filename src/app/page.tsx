@@ -456,21 +456,23 @@ export default function Home() {
                         tickLine={false}
                         tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
                       />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#0f172a",
-                          borderColor: "#334155",
-                          borderRadius: "0.75rem",
-                        }}
-                        formatter={(val: unknown) => [
-                          val !== undefined
-                            ? metricView === "price"
-                              ? `₹${Number(val).toLocaleString("en-IN")}`
-                              : val
-                            : "N/A",
-                          metricView === "price" ? "Estimated Fare" : "Jevons Index",
-                        ]}
-                      />
+                     <Tooltip
+  contentStyle={{
+    backgroundColor: "#0f172a",
+    borderColor: "#334155",
+    borderRadius: "0.75rem",
+  }}
+  formatter={(val: any) => {
+    if (val === undefined || val === null) return ["N/A", metricView === "price" ? "Estimated Fare" : "Jevons Index"];
+    
+    const formattedVal =
+      metricView === "price"
+        ? `₹${Number(val).toLocaleString("en-IN")}`
+        : String(val);
+
+    return [formattedVal, metricView === "price" ? "Estimated Fare" : "Jevons Index"];
+  }}
+/>
                       <Line
                         type="monotone"
                         dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
