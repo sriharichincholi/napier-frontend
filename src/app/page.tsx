@@ -14,22 +14,6 @@ import {
 type TimeFrame = "7d" | "30d" | "90d" | "ALL";
 type MetricView = "price" | "index";
 
-interface IndexDataPoint {
-  calculation_date: string;
-  jevons_index_value?: number;
-  jevons_index?: number;
-  estimated_price?: number;
-  [key: string]: unknown;
-}
-
-interface AirlineCard {
-  name: string;
-  code: string;
-  color: string;
-  price: number;
-  url: string;
-}
-
 const AVAILABLE_ROUTES = [
   { code: "DEL-BOM", label: "Delhi → Mumbai", origin: "DEL", dest: "BOM" },
   { code: "DEL-BLR", label: "Delhi → Bengaluru", origin: "DEL", dest: "BLR" },
@@ -48,7 +32,7 @@ const LEAD_WINDOWS = [
 ];
 
 export default function Home() {
-  const [data, setData] = useState<IndexDataPoint[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,14 +44,11 @@ export default function Home() {
 
   // Chatbot State
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "ai" | "user"; text: string }>>([
-    {
-      sender: "ai",
-      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes.",
-    },
+    { sender: "ai", text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes." },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
 
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const activeRouteObj = useMemo(() => {
     return AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0];
@@ -79,13 +60,6 @@ export default function Home() {
     d.setDate(d.getDate() + selectedLeadTime);
     return d.toISOString().split("T")[0];
   }, [selectedLeadTime]);
-
-  // Auto scroll chat window when messages update
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [chatMessages]);
 
   useEffect(() => {
     const baseUrl =
@@ -109,7 +83,7 @@ export default function Home() {
         if (Array.isArray(list) && list.length > 0) {
           const BASE_AIRFARE_INR = 4500;
 
-          const formatted: IndexDataPoint[] = list.map((item: IndexDataPoint) => {
+          const formatted = list.map((item: any) => {
             const rawIndex = item.jevons_index_value ?? item.jevons_index ?? 100;
             const estimatedPrice = Math.round(BASE_AIRFARE_INR * (rawIndex / 100));
 
@@ -123,11 +97,10 @@ export default function Home() {
         } else {
           setData([]);
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         console.error("Fetch error:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to connect to index service";
-        setError(errorMessage);
-      } finally {
+        setError(err.message || "Failed to connect to index service");
+      } font-medium
         setLoading(false);
       }
     };
@@ -150,26 +123,26 @@ export default function Home() {
     ? filteredData[0]
     : { estimated_price: 5000, jevons_index: 100 };
 
-  const currentPrice = latestItem.estimated_price ?? 5000;
-  const currentIndex = latestItem.jevons_index ?? 100;
+  const currentPrice = latestItem.estimated_price;
+  const currentIndex = latestItem.jevons_index;
 
   const minPrice = filteredData.length
-    ? Math.min(...filteredData.map((d) => d.estimated_price ?? 5000))
+    ? Math.min(...filteredData.map((d) => d.estimated_price))
     : 5000;
   const maxPrice = filteredData.length
-    ? Math.max(...filteredData.map((d) => d.estimated_price ?? 5000))
+    ? Math.max(...filteredData.map((d) => d.estimated_price))
     : 5000;
 
   const periodChange = filteredData.length
     ? (
-        (((latestItem.estimated_price ?? 5000) - (firstItem.estimated_price ?? 5000)) /
-          (firstItem.estimated_price ?? 5000)) *
+        ((latestItem.estimated_price - firstItem.estimated_price) /
+          firstItem.estimated_price) *
         100
       ).toFixed(1)
     : "0.0";
 
   // Dynamic airline live cards with verification hyperlinked deep-links
-  const airlineCards: AirlineCard[] = useMemo(() => {
+  const airlineCards = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
     return [
@@ -232,6 +205,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      
       {/* HEADER SECTION */}
       <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
@@ -242,7 +216,8 @@ export default function Home() {
         </p>
       </header>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
+        
         {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX & HYPERLINKS */}
         <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b border-slate-800/80 pb-3">
@@ -294,13 +269,11 @@ export default function Home() {
 
         {/* PARAMETER CONTROL BAR */}
         <section className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          
           {/* City-Pair Route Dropdown */}
           <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <label htmlFor="route-select" className="text-xs text-slate-400 font-medium">
-              City-Pair Route
-            </label>
+            <label className="text-xs text-slate-400 font-medium">City-Pair Route</label>
             <select
-              id="route-select"
               value={selectedRoute}
               onChange={(e) => setSelectedRoute(e.target.value)}
               className="bg-slate-950 border border-slate-800 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -315,12 +288,11 @@ export default function Home() {
 
           {/* Advance Purchase Window */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-slate-400 font-medium">Advance Purchase Window</span>
+            <label className="text-xs text-slate-400 font-medium">Advance Purchase Window</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               {LEAD_WINDOWS.map((lw) => (
                 <button
                   key={lw.value}
-                  type="button"
                   onClick={() => setSelectedLeadTime(lw.value)}
                   className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                     selectedLeadTime === lw.value
@@ -336,10 +308,9 @@ export default function Home() {
 
           {/* Metric Toggle */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-slate-400 font-medium">Metric Display</span>
+            <label className="text-xs text-slate-400 font-medium">Metric Display</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               <button
-                type="button"
                 onClick={() => setMetricView("price")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "price"
@@ -350,7 +321,6 @@ export default function Home() {
                 Price (₹)
               </button>
               <button
-                type="button"
                 onClick={() => setMetricView("index")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "index"
@@ -365,12 +335,11 @@ export default function Home() {
 
           {/* Timeframe Selector */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-slate-400 font-medium">Timeframe</span>
+            <label className="text-xs text-slate-400 font-medium">Timeframe</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
               {(["7d", "30d", "90d", "ALL"] as TimeFrame[]).map((tf) => (
                 <button
                   key={tf}
-                  type="button"
                   onClick={() => setTimeframe(tf)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                     timeframe === tf
@@ -383,10 +352,12 @@ export default function Home() {
               ))}
             </div>
           </div>
+
         </section>
 
-        {/* MAIN WORKSPACE GRID */}
+        {/* MAIN WORKSPACE GRID: Left = Chart & Past History | Right = DB Telematics & AI Chatbot */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          
           {/* LEFT 3 COLUMNS: PAST HISTORY & RECHARTS GRAPH */}
           <main className="lg:col-span-3 border border-slate-800 rounded-2xl p-5 bg-slate-900/50 flex flex-col justify-between space-y-6">
             <div>
@@ -464,10 +435,8 @@ export default function Home() {
                           borderColor: "#334155",
                           borderRadius: "0.75rem",
                         }}
-                        formatter={(val: unknown) => [
-                          metricView === "price"
-                            ? `₹${Number(val).toLocaleString("en-IN")}`
-                            : val,
+                        formatter={(val: any) => [
+                          metricView === "price" ? `₹${val.toLocaleString("en-IN")}` : val,
                           metricView === "price" ? "Estimated Fare" : "Jevons Index",
                         ]}
                       />
@@ -486,7 +455,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scroll Indicator */}
+            {/* Scroll Indicator for Real Time Data */}
             <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-2">
                 <span className="animate-bounce">↓</span>
@@ -496,8 +465,9 @@ export default function Home() {
             </div>
           </main>
 
-          {/* RIGHT 1 COLUMN: SIDEBAR */}
+          {/* RIGHT 1 COLUMN: SIDEBAR (DB STATUS + AI CHATBOT + SCRAPER TRIGGER) */}
           <aside className="lg:col-span-1 flex flex-col gap-6">
+            
             {/* STATUS OF DB AND ROUTE DATA */}
             <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50">
               <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
@@ -529,10 +499,10 @@ export default function Home() {
                 <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
                   AI Assistant / Chatbot
                 </h4>
-
+                
                 {/* Chat window */}
                 <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                  <div ref={chatContainerRef} className="overflow-y-auto space-y-2 pr-1 text-xs">
+                  <div className="overflow-y-auto space-y-2 pr-1 text-xs">
                     {chatMessages.map((msg, i) => (
                       <div
                         key={i}
@@ -567,7 +537,6 @@ export default function Home() {
 
               {/* Get More Data Trigger */}
               <button
-                type="button"
                 onClick={() => alert(`Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`)}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/40"
               >
@@ -575,8 +544,50 @@ export default function Home() {
                 <span>➔</span>
               </button>
             </div>
+
           </aside>
         </div>
+
+        {/* INFORMATION SECTION: ABOUT US & PURPOSE OF NAPIER */}
+        <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-900 text-slate-300">
+          
+          {/* PURPOSE OF NAPIER */}
+          <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <h3 className="text-lg font-bold text-white">Purpose of NAPIER</h3>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> was constructed to address volatile dynamic pricing algorithms across Indian domestic aviation sectors. By monitoring pricing behaviors across advance purchase windows (T+1 to T+45 days), NAPIER brings market transparency to travelers, enterprise procurement teams, and aviation analysts.
+            </p>
+            <ul className="text-xs text-slate-400 space-y-2 list-disc list-inside pt-1">
+              <li><strong>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
+              <li><strong>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
+              <li><strong>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
+            </ul>
+          </div>
+
+          {/* ABOUT US */}
+          <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500" />
+              <h3 className="text-lg font-bold text-white">About Us</h3>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              NAPIER is an open statistical initiative built by data engineers and aviation economists. We aim to offer an unbiased index metric for domestic air travel, acting as a standardized market barometer similar to traditional consumer price indexes.
+            </p>
+            <div className="pt-2 text-xs text-slate-400 space-y-1">
+              <p><strong className="text-slate-300">Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
+              <p><strong className="text-slate-300">Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
+            </div>
+            <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800/60 flex justify-between items-center">
+              <span>© {new Date().getFullYear()} NAPIER Engine</span>
+              <span>v1.0.4 Live Telemetry</span>
+            </div>
+          </div>
+
+        </footer>
+
       </div>
     </div>
   );
