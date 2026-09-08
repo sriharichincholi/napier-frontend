@@ -67,6 +67,11 @@ export default function Home() {
   const [timeframe, setTimeframe] = useState<TimeFrame>("30d");
   const [metricView, setMetricView] = useState<MetricView>("price");
 
+  // Dynamic Route Search States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any | null>(null);
+
   // Chatbot State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -210,6 +215,35 @@ export default function Home() {
     ];
   }, [currentPrice, activeRouteObj, targetDateStr]);
 
+  const handleRouteSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    const queryLower = searchQuery.toLowerCase();
+
+    setTimeout(() => {
+      const mockResult = {
+        query: searchQuery,
+        origin: queryLower.includes("hyd") ? "HYD (Hyderabad)" : "DEL (Delhi)",
+        destination:
+          queryLower.includes("frankfurt") || queryLower.includes("fra")
+            ? "FRA (Frankfurt)"
+            : "BOM (Mumbai)",
+        avgPrice: 42500,
+        jevonsIndex: 112.4,
+        options: [
+          { airline: "Lufthansa", code: "LH", price: "₹45,200", duration: "8h 45m", type: "Non-stop" },
+          { airline: "Air India", code: "AI", price: "₹39,800", duration: "11h 15m", type: "1-Stop (DEL)" },
+          { airline: "Emirates", code: "EK", price: "₹48,900", duration: "10h 30m", type: "1-Stop (DXB)" },
+        ],
+      };
+
+      setSearchResults(mockResult);
+      setIsSearching(false);
+    }, 800);
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -237,17 +271,33 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* HEADER SECTION WITH LOGO GLOW */}
+      {/* HEADER SECTION WITH ICON LOGO & GLOW */}
       <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
-        <div className="relative group flex items-center justify-center">
-          {/* Pulsing ambient glow effect behind main logo */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 rounded-full blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
-          
-          <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 drop-shadow-md">
+        <div className="relative group flex items-center justify-center gap-3">
+          <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-indigo-500 to-[#00BB77] rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
+
+          <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-xl bg-gradient-to-br from-purple-600 via-purple-500 to-[#00BB77] flex items-center justify-center shadow-lg shadow-purple-500/30 border border-white/20 shrink-0">
+            <svg
+              className="w-6 h-6 text-white stroke-[2.5]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 005.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.94"
+              />
+            </svg>
+          </div>
+
+          <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-[#00BB77] drop-shadow-md">
             NAPIER
           </h1>
         </div>
-        <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-1 tracking-wide">
+
+        <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-2 tracking-wide">
           National Airfare Price Index Engine Real-time
         </p>
       </header>
@@ -384,6 +434,76 @@ export default function Home() {
           </div>
         </section>
 
+        {/* DYNAMIC EXPANDABLE ROUTE SEARCH BOX */}
+        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl transition-all duration-500">
+          <form onSubmit={handleRouteSearch} className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="relative flex-1 w-full">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search any route (e.g., 'Frankfurt from HYD', 'DEL to LHR')..."
+                className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00BB77] focus:border-transparent transition-all placeholder:text-slate-500"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-purple-500/20"
+            >
+              {isSearching ? (
+                <>
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Searching...</span>
+                </>
+              ) : (
+                <>
+                  <span>Search Route</span>
+                  <span>➔</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {searchResults && (
+            <div className="mt-4 pt-4 border-t border-slate-800/80 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#00BB77] animate-pulse" />
+                  <h4 className="text-sm font-bold text-white">
+                    Search Results: <span className="text-purple-400">{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSearchResults(null)}
+                  className="text-xs text-slate-500 hover:text-slate-300 font-mono"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {searchResults.options.map((opt: any, idx: number) => (
+                  <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex justify-between items-center hover:border-[#00BB77]/50 transition-all">
+                    <div>
+                      <p className="text-xs font-bold text-white">{opt.airline} <span className="text-[10px] text-slate-500 font-mono">({opt.code})</span></p>
+                      <p className="text-[10px] text-slate-400">{opt.type} • {opt.duration}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-extrabold text-[#00BB77]">{opt.price}</p>
+                      <span className="text-[9px] text-purple-400 font-mono">Index: {searchResults.jevonsIndex}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* MAIN WORKSPACE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <main className="lg:col-span-3 border border-slate-800 rounded-2xl p-5 bg-slate-900/50 flex flex-col justify-between space-y-6">
@@ -456,23 +576,21 @@ export default function Home() {
                         tickLine={false}
                         tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
                       />
-                     <Tooltip
-  contentStyle={{
-    backgroundColor: "#0f172a",
-    borderColor: "#334155",
-    borderRadius: "0.75rem",
-  }}
-  formatter={(val: any) => {
-    if (val === undefined || val === null) return ["N/A", metricView === "price" ? "Estimated Fare" : "Jevons Index"];
-    
-    const formattedVal =
-      metricView === "price"
-        ? `₹${Number(val).toLocaleString("en-IN")}`
-        : String(val);
-
-    return [formattedVal, metricView === "price" ? "Estimated Fare" : "Jevons Index"];
-  }}
-/>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#0f172a",
+                          borderColor: "#334155",
+                          borderRadius: "0.75rem",
+                        }}
+                        formatter={(val: any) => {
+                          if (val === undefined || val === null) return ["N/A", metricView === "price" ? "Estimated Fare" : "Jevons Index"];
+                          const formattedVal =
+                            metricView === "price"
+                              ? `₹${Number(val).toLocaleString("en-IN")}`
+                              : String(val);
+                          return [formattedVal, metricView === "price" ? "Estimated Fare" : "Jevons Index"];
+                        }}
+                      />
                       <Line
                         type="monotone"
                         dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
@@ -564,6 +682,7 @@ export default function Home() {
               </div>
 
               <button
+                type="button"
                 onClick={() =>
                   alert(
                     `Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`
