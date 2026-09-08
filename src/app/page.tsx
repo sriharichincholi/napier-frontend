@@ -56,7 +56,6 @@ const LEAD_WINDOWS: LeadWindowOption[] = [
   { value: 45, label: "T+45 Days" },
 ];
 
-// Comprehensive Airport & City Mapping for Any Global or Domestic Route Search
 const AIRPORT_DATABASE: Record<string, { code: string; city: string; country: string }> = {
   hyd: { code: "HYD", city: "Hyderabad", country: "India" },
   hyderabad: { code: "HYD", city: "Hyderabad", country: "India" },
@@ -112,11 +111,12 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any | null>(null);
 
-  // Chatbot State
+  // AI Drawer Sidebar State
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       sender: "ai",
-      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes.",
+      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, price predictions, or optimal booking windows.",
     },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
@@ -127,7 +127,6 @@ export default function Home() {
     );
   }, [selectedRoute]);
 
-  // Target departure date calculation
   const targetDateStr = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedLeadTime);
@@ -255,7 +254,6 @@ export default function Home() {
     ];
   }, [currentPrice, activeRouteObj, targetDateStr]);
 
-  // Universal Any-Route Parser Engine
   const handleRouteSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -267,7 +265,6 @@ export default function Home() {
       let origin = { code: "HYD", city: "Hyderabad" };
       let dest = { code: "FRA", city: "Frankfurt" };
 
-      // Search for matches in user input against airport database
       const tokens = cleaned.split(/[\s-]+/);
       const matchedAirports: { code: string; city: string }[] = [];
 
@@ -363,37 +360,122 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* HEADER SECTION WITH ICON LOGO & GLOW */}
-      <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
-        <div className="relative group flex items-center justify-center gap-3">
-          <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-indigo-500 to-[#00BB77] rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative overflow-x-hidden">
+      {/* HEADER SECTION WITH LOGO & AI TOGGLE BUTTON */}
+      <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-40 flex items-center justify-between">
+        <div className="flex-1 flex flex-col items-center text-center pl-10">
+          <div className="relative group flex items-center justify-center gap-3">
+            <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-indigo-500 to-[#00BB77] rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
 
-          <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-xl bg-gradient-to-br from-purple-600 via-purple-500 to-[#00BB77] flex items-center justify-center shadow-lg shadow-purple-500/30 border border-white/20 shrink-0">
-            <svg
-              className="w-6 h-6 text-white stroke-[2.5]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 005.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.94"
-              />
-            </svg>
+            <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-xl bg-gradient-to-br from-purple-600 via-purple-500 to-[#00BB77] flex items-center justify-center shadow-lg shadow-purple-500/30 border border-white/20 shrink-0">
+              <svg
+                className="w-6 h-6 text-white stroke-[2.5]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 005.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.94"
+                />
+              </svg>
+            </div>
+
+            <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-[#00BB77] drop-shadow-md">
+              NAPIER
+            </h1>
           </div>
 
-          <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-[#00BB77] drop-shadow-md">
-            NAPIER
-          </h1>
+          <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-2 tracking-wide">
+            National Airfare Price Index Engine Real-time
+          </p>
         </div>
 
-        <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-2 tracking-wide">
-          National Airfare Price Index Engine Real-time
-        </p>
+        {/* AI Sidebar Launcher Button in Header */}
+        <button
+          onClick={() => setIsAiSidebarOpen(true)}
+          className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 shrink-0"
+        >
+          <span>✨ AI Assistant</span>
+        </button>
       </header>
+
+      {/* FLOATING ACTION TRIGGER BUTTON FOR AI SIDEBAR */}
+      <button
+        onClick={() => setIsAiSidebarOpen((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:scale-105 transition-all duration-300 p-4 rounded-full shadow-2xl shadow-purple-500/40 border border-white/20 flex items-center justify-center group"
+        title="Toggle AI Sidebar"
+      >
+        <span className="text-xl">✨</span>
+        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 text-xs font-bold text-white pl-0 group-hover:pl-2">
+          Ask NAPIER AI
+        </span>
+      </button>
+
+      {/* SLIDING AI DRAWER SIDEBAR */}
+      {isAiSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity"
+          onClick={() => setIsAiSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-slate-900 border-l border-slate-800 z-50 shadow-2xl transition-transform duration-300 transform flex flex-col justify-between ${
+          isAiSidebarOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✨</span>
+            <h3 className="text-sm font-bold text-white">NAPIER AI Assistant</h3>
+          </div>
+          <button
+            onClick={() => setIsAiSidebarOpen(false)}
+            className="text-slate-400 hover:text-white text-lg font-mono p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Chat Messages Log */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-950/50">
+          {chatMessages.map((msg, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-xl max-w-[85%] ${
+                msg.sender === "user"
+                  ? "bg-purple-600 text-white ml-auto text-right shadow-md shadow-purple-600/20"
+                  : "bg-slate-900 border border-slate-800 text-slate-200 mr-auto shadow-md"
+              }`}
+            >
+              {msg.text}
+            </div>
+          ))}
+        </div>
+
+        {/* Chat Input Area */}
+        <div className="p-4 border-t border-slate-800 bg-slate-950/80">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Ask about trends, predictions..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              className="flex-1 bg-slate-900 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00BB77]"
+            />
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+      </aside>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
         {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX */}
@@ -734,44 +816,14 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex-1 border border-slate-800 rounded-2xl p-4 bg-slate-900/50 flex flex-col justify-between space-y-4">
+            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50 flex flex-col justify-between space-y-4">
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
-                  AI Assistant / Chatbot
+                  System Scraping Trigger
                 </h4>
-
-                <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-                  <div className="overflow-y-auto space-y-2 pr-1 text-xs">
-                    {chatMessages.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`p-2 rounded-lg ${
-                          msg.sender === "user"
-                            ? "bg-blue-600/30 text-blue-200 ml-4 text-right border border-blue-500/20"
-                            : "bg-slate-900 text-slate-300 mr-4 border border-slate-800"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                    ))}
-                  </div>
-
-                  <form onSubmit={handleSendMessage} className="mt-2 flex gap-1">
-                    <input
-                      type="text"
-                      placeholder="Ask AI..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"
-                    >
-                      Send
-                    </button>
-                  </form>
-                </div>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  Manually trigger backend Playwright headless workers to scrape current prices across routes.
+                </p>
               </div>
 
               <button
