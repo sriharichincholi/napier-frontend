@@ -101,7 +101,7 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Theme State (Dark / Bright)
+  // Theme State (Dark / Bright Mint-Sage)
   const [theme, setTheme] = useState<ThemeMode>("dark");
 
   // Filter States
@@ -373,13 +373,12 @@ export default function Home() {
     }, 500);
   };
 
-  // Dynamic Theme Colors
   const isDark = theme === "dark";
 
   return (
     <div
       className={`min-h-screen flex flex-col font-sans relative overflow-x-hidden transition-colors duration-300 ${
-        isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+        isDark ? "bg-slate-950 text-slate-100" : "bg-[#F4F8F5] text-[#1C2E24]"
       }`}
     >
       {/* HEADER SECTION WITH LOGO, THEME TOGGLE & AI BUTTON */}
@@ -387,14 +386,26 @@ export default function Home() {
         className={`p-6 border-b sticky top-0 z-40 flex items-center justify-between backdrop-blur transition-colors ${
           isDark
             ? "border-slate-900 bg-slate-950/80"
-            : "border-slate-200 bg-white/80"
+            : "border-[#D8E6DF] bg-[#F4F8F5]/85"
         }`}
       >
         <div className="flex-1 flex flex-col items-center text-center pl-10">
           <div className="relative group flex items-center justify-center gap-3">
-            <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-indigo-500 to-[#00BB77] rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
+            <div
+              className={`absolute -inset-2 bg-gradient-to-r rounded-3xl blur-xl transition duration-1000 group-hover:duration-200 animate-pulse ${
+                isDark
+                  ? "from-purple-600 via-indigo-500 to-[#00BB77] opacity-70 group-hover:opacity-100"
+                  : "from-[#3B7A57] via-[#529471] to-[#00BB77] opacity-40 group-hover:opacity-70"
+              }`}
+            />
 
-            <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-xl bg-gradient-to-br from-purple-600 via-purple-500 to-[#00BB77] flex items-center justify-center shadow-lg shadow-purple-500/30 border border-white/20 shrink-0">
+            <div
+              className={`relative w-11 h-11 md:w-13 md:h-13 rounded-xl flex items-center justify-center shadow-lg border border-white/20 shrink-0 ${
+                isDark
+                  ? "bg-gradient-to-br from-purple-600 via-purple-500 to-[#00BB77] shadow-purple-500/30"
+                  : "bg-gradient-to-br from-[#2D5E43] via-[#3B7A57] to-[#529471] shadow-[#3B7A57]/30"
+              }`}
+            >
               <svg
                 className="w-6 h-6 text-white stroke-[2.5]"
                 fill="none"
@@ -410,7 +421,13 @@ export default function Home() {
               </svg>
             </div>
 
-            <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-indigo-500 to-[#00BB77] drop-shadow-md">
+            <h1
+              className={`relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r drop-shadow-md ${
+                isDark
+                  ? "from-purple-500 via-indigo-500 to-[#00BB77]"
+                  : "from-[#1C2E24] via-[#2D5E43] to-[#3B7A57]"
+              }`}
+            >
               NAPIER
             </h1>
           </div>
@@ -419,7 +436,7 @@ export default function Home() {
             className={`text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r ${
               isDark
                 ? "from-purple-400 via-pink-400 to-amber-300"
-                : "from-purple-600 via-pink-600 to-amber-600"
+                : "from-[#2D5E43] via-[#3B7A57] to-[#00BB77]"
             } mt-2 tracking-wide`}
           >
             National Airfare Price Index Engine Real-time
@@ -428,16 +445,16 @@ export default function Home() {
 
         {/* Top Right Control Group: Theme Switcher & AI Assistant */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-          {/* DARK / BRIGHT MODE TOGGLE BUTTON */}
+          {/* DARK / BRIGHT MINT-SAGE TOGGLE BUTTON */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
             className={`p-2.5 rounded-xl border transition-all flex items-center justify-center shadow-md ${
               isDark
                 ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800"
-                : "bg-slate-100 border-slate-300 text-indigo-600 hover:bg-slate-200"
+                : "bg-[#E8F0EC] border-[#C2DFD0] text-[#2D5E43] hover:bg-[#D8E6DF]"
             }`}
-            title={isDark ? "Switch to Bright Mode" : "Switch to Dark Mode"}
+            title={isDark ? "Switch to Mint / Sage Light Mode" : "Switch to Dark Mode"}
           >
             {isDark ? (
               /* Sun Icon for Light Mode */
@@ -463,7 +480,11 @@ export default function Home() {
           {/* AI Sidebar Launcher Button */}
           <button
             onClick={() => setIsAiSidebarOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 shrink-0"
+            className={`font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shrink-0 text-white ${
+              isDark
+                ? "bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 shadow-purple-500/20"
+                : "bg-gradient-to-r from-[#2D5E43] to-[#3B7A57] hover:bg-[#1C2E24] shadow-[#3B7A57]/20"
+            }`}
           >
             <span>✨ AI Assistant</span>
           </button>
@@ -473,7 +494,11 @@ export default function Home() {
       {/* FLOATING ACTION TRIGGER BUTTON FOR AI SIDEBAR */}
       <button
         onClick={() => setIsAiSidebarOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:scale-105 transition-all duration-300 p-4 rounded-full shadow-2xl shadow-purple-500/40 border border-white/20 flex items-center justify-center group"
+        className={`fixed bottom-6 right-6 z-40 hover:scale-105 transition-all duration-300 p-4 rounded-full shadow-2xl border border-white/20 flex items-center justify-center group ${
+          isDark
+            ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] shadow-purple-500/40"
+            : "bg-gradient-to-r from-[#2D5E43] via-[#3B7A57] to-[#00BB77] shadow-[#3B7A57]/30 text-white"
+        }`}
         title="Toggle AI Sidebar"
       >
         <span className="text-xl">✨</span>
@@ -486,7 +511,7 @@ export default function Home() {
       {isAiSidebarOpen && (
         <div
           className={`fixed inset-0 backdrop-blur-sm z-50 transition-opacity ${
-            isDark ? "bg-slate-950/60" : "bg-slate-900/40"
+            isDark ? "bg-slate-950/60" : "bg-[#1C2E24]/20"
           }`}
           onClick={() => setIsAiSidebarOpen(false)}
         />
@@ -498,40 +523,44 @@ export default function Home() {
         } ${
           isDark
             ? "bg-slate-900 border-slate-800"
-            : "bg-white border-slate-200"
+            : "bg-[#F4F8F5] border-[#C2DFD0]"
         }`}
       >
         {/* Sidebar Header */}
         <div
           className={`p-4 border-b flex items-center justify-between ${
-            isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-50"
+            isDark
+              ? "border-slate-800 bg-slate-950/80"
+              : "border-[#D8E6DF] bg-[#E8F0EC]"
           }`}
         >
           <div className="flex items-center gap-2">
             <span className="text-lg">✨</span>
-            <h3 className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+            <h3 className={`text-sm font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
               NAPIER AI Assistant
             </h3>
           </div>
           <button
             onClick={() => setIsAiSidebarOpen(false)}
-            className={`${isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"} text-lg font-mono p-1`}
+            className={`${isDark ? "text-slate-400 hover:text-white" : "text-[#4A6356] hover:text-[#1C2E24]"} text-lg font-mono p-1`}
           >
             ✕
           </button>
         </div>
 
         {/* Chat Messages Log */}
-        <div className={`flex-1 p-4 overflow-y-auto space-y-3 text-xs ${isDark ? "bg-slate-950/50" : "bg-slate-50/50"}`}>
+        <div className={`flex-1 p-4 overflow-y-auto space-y-3 text-xs ${isDark ? "bg-slate-950/50" : "bg-[#F4F8F5]"}`}>
           {chatMessages.map((msg, i) => (
             <div
               key={i}
               className={`p-3 rounded-xl max-w-[85%] ${
                 msg.sender === "user"
-                  ? "bg-purple-600 text-white ml-auto text-right shadow-md shadow-purple-600/20"
+                  ? isDark
+                    ? "bg-purple-600 text-white ml-auto text-right shadow-md shadow-purple-600/20"
+                    : "bg-[#3B7A57] text-white ml-auto text-right shadow-md shadow-[#3B7A57]/20"
                   : isDark
                   ? "bg-slate-900 border border-slate-800 text-slate-200 mr-auto shadow-md"
-                  : "bg-white border border-slate-200 text-slate-800 mr-auto shadow-sm"
+                  : "bg-[#E8F0EC] border border-[#C2DFD0] text-[#1C2E24] mr-auto shadow-sm"
               }`}
             >
               {msg.text}
@@ -542,7 +571,7 @@ export default function Home() {
         {/* Chat Input Area */}
         <div
           className={`p-4 border-t ${
-            isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-white"
+            isDark ? "border-slate-800 bg-slate-950/80" : "border-[#D8E6DF] bg-[#E8F0EC]"
           }`}
         >
           <form onSubmit={handleSendMessage} className="flex gap-2">
@@ -551,15 +580,19 @@ export default function Home() {
               placeholder="Ask about trends, predictions..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              className={`flex-1 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00BB77] ${
+              className={`flex-1 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 ${
                 isDark
-                  ? "bg-slate-900 border border-slate-800 text-white"
-                  : "bg-slate-100 border border-slate-200 text-slate-900"
+                  ? "bg-slate-900 border border-slate-800 text-white focus:ring-[#00BB77]"
+                  : "bg-white border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
               }`}
             />
             <button
               type="submit"
-              className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
+              className={`font-bold text-xs px-4 py-2.5 rounded-xl transition-all text-white ${
+                isDark
+                  ? "bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90"
+                  : "bg-[#3B7A57] hover:bg-[#2D5E43]"
+              }`}
             >
               Send
             </button>
@@ -573,24 +606,24 @@ export default function Home() {
           className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
             isDark
               ? "bg-slate-900/60 border-slate-800"
-              : "bg-white/80 border-slate-200 shadow-slate-200/50"
+              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
           }`}
         >
           <div
             className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b pb-3 ${
-              isDark ? "border-slate-800/80" : "border-slate-200"
+              isDark ? "border-slate-800/80" : "border-[#D8E6DF]"
             }`}
           >
             <div>
               <h2
                 className={`text-lg font-bold flex items-center gap-2 ${
-                  isDark ? "text-white" : "text-slate-900"
+                  isDark ? "text-white" : "text-[#1C2E24]"
                 }`}
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
                 Real-Time Live Airline Fares
               </h2>
-              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                 Click any carrier card to verify live fares directly on official booking search cards for {activeRouteObj.label} ({targetDateStr})
               </p>
             </div>
@@ -598,7 +631,7 @@ export default function Home() {
               className={`text-xs font-mono px-3 py-1 rounded-full border ${
                 isDark
                   ? "bg-slate-950 text-emerald-400 border-emerald-500/30"
-                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-[#F4F8F5] text-[#2D5E43] border-[#C2DFD0]"
               }`}
             >
               ● Live Scrape Stream Active
@@ -615,7 +648,7 @@ export default function Home() {
                 className={`group relative border rounded-xl p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
                   isDark
                     ? "bg-slate-950 border-slate-800 hover:border-blue-500/50 hover:shadow-blue-500/10"
-                    : "bg-slate-50 border-slate-200 hover:border-blue-400 hover:bg-white hover:shadow-slate-200"
+                    : "bg-[#F4F8F5] border-[#C2DFD0] hover:border-[#3B7A57] hover:bg-white hover:shadow-[#1C2E24]/10"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -623,7 +656,7 @@ export default function Home() {
                     className={`text-xs font-bold ${
                       isDark
                         ? "text-slate-300 group-hover:text-blue-400"
-                        : "text-slate-700 group-hover:text-blue-600"
+                        : "text-[#1C2E24] group-hover:text-[#3B7A57]"
                     }`}
                   >
                     {carrier.name}
@@ -632,27 +665,27 @@ export default function Home() {
                     className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                       isDark
                         ? "bg-slate-800 text-slate-400"
-                        : "bg-slate-200 text-slate-600"
+                        : "bg-[#E8F0EC] text-[#4A6356]"
                     }`}
                   >
                     {carrier.code}
                   </span>
                 </div>
                 <div className="mt-3">
-                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
                     Live Scraped Fare
                   </p>
                   <p
                     className={`text-lg font-extrabold ${
                       isDark
                         ? "text-white group-hover:text-emerald-400"
-                        : "text-slate-900 group-hover:text-emerald-600"
+                        : "text-[#1C2E24] group-hover:text-[#2D5E43]"
                     } transition-colors`}
                   >
                     ₹{carrier.price.toLocaleString("en-IN")}
                   </p>
                 </div>
-                <div className="mt-2 text-[10px] text-blue-500 flex items-center gap-1 group-hover:underline">
+                <div className={`mt-2 text-[10px] flex items-center gap-1 group-hover:underline ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
                   <span>Verify Fare</span>
                   <span>➔</span>
                 </div>
@@ -666,20 +699,20 @@ export default function Home() {
           className={`border p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
             isDark
               ? "bg-slate-900/80 border-slate-800"
-              : "bg-white border-slate-200 shadow-sm"
+              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
           }`}
         >
           <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
               City-Pair Route
             </label>
             <select
               value={selectedRoute}
               onChange={(e) => setSelectedRoute(e.target.value)}
-              className={`text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              className={`text-sm rounded-lg px-3 py-2 focus:ring-2 focus:outline-none ${
                 isDark
-                  ? "bg-slate-950 border border-slate-800 text-white"
-                  : "bg-slate-100 border border-slate-300 text-slate-900"
+                  ? "bg-slate-950 border border-slate-800 text-white focus:ring-purple-500"
+                  : "bg-[#F4F8F5] border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
               }`}
             >
               {AVAILABLE_ROUTES.map((r) => (
@@ -691,14 +724,14 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
               Advance Purchase Window
             </label>
             <div
               className={`flex items-center rounded-lg p-1 space-x-1 border ${
                 isDark
                   ? "bg-slate-950 border-slate-800"
-                  : "bg-slate-100 border-slate-200"
+                  : "bg-[#F4F8F5] border-[#C2DFD0]"
               }`}
             >
               {LEAD_WINDOWS.map((lw) => (
@@ -707,10 +740,12 @@ export default function Home() {
                   onClick={() => setSelectedLeadTime(lw.value)}
                   className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                     selectedLeadTime === lw.value
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? isDark
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-[#3B7A57] text-white shadow-sm"
                       : isDark
                       ? "text-slate-400 hover:text-white"
-                      : "text-slate-600 hover:text-slate-900"
+                      : "text-[#4A6356] hover:text-[#1C2E24]"
                   }`}
                 >
                   {lw.label}
@@ -720,24 +755,26 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
               Metric Display
             </label>
             <div
               className={`flex items-center rounded-lg p-1 space-x-1 border ${
                 isDark
                   ? "bg-slate-950 border-slate-800"
-                  : "bg-slate-100 border-slate-200"
+                  : "bg-[#F4F8F5] border-[#C2DFD0]"
               }`}
             >
               <button
                 onClick={() => setMetricView("price")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "price"
-                    ? "bg-purple-600 text-white shadow-sm"
+                    ? isDark
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "bg-[#3B7A57] text-white shadow-sm"
                     : isDark
                     ? "text-slate-400 hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    : "text-[#4A6356] hover:text-[#1C2E24]"
                 }`}
               >
                 Price (₹)
@@ -746,10 +783,12 @@ export default function Home() {
                 onClick={() => setMetricView("index")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "index"
-                    ? "bg-purple-600 text-white shadow-sm"
+                    ? isDark
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "bg-[#3B7A57] text-white shadow-sm"
                     : isDark
                     ? "text-slate-400 hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    : "text-[#4A6356] hover:text-[#1C2E24]"
                 }`}
               >
                 Jevons Index
@@ -758,14 +797,14 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
               Timeframe
             </label>
             <div
               className={`flex items-center rounded-lg p-1 space-x-1 border ${
                 isDark
                   ? "bg-slate-950 border-slate-800"
-                  : "bg-slate-100 border-slate-200"
+                  : "bg-[#F4F8F5] border-[#C2DFD0]"
               }`}
             >
               {(["7d", "30d", "90d", "ALL"] as TimeFrame[]).map((tf) => (
@@ -776,10 +815,10 @@ export default function Home() {
                     timeframe === tf
                       ? isDark
                         ? "bg-slate-800 text-white font-semibold"
-                        : "bg-white text-slate-900 font-semibold shadow-sm"
+                        : "bg-white text-[#1C2E24] font-bold shadow-sm"
                       : isDark
                       ? "text-slate-400 hover:text-white"
-                      : "text-slate-600 hover:text-slate-900"
+                      : "text-[#4A6356] hover:text-[#1C2E24]"
                   }`}
                 >
                   {tf}
@@ -794,12 +833,12 @@ export default function Home() {
           className={`border rounded-2xl p-4 shadow-xl transition-all duration-500 ${
             isDark
               ? "bg-slate-900/80 border-slate-800"
-              : "bg-white border-slate-200 shadow-slate-200/50"
+              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
           }`}
         >
           <form onSubmit={handleRouteSearch} className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="relative flex-1 w-full">
-              <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                 🔍
               </span>
               <input
@@ -807,17 +846,21 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search ANY route globally or domestically (e.g., 'Frankfurt from HYD', 'DEL to LHR', 'PNQ to BLR')..."
-                className={`w-full text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00BB77] focus:border-transparent transition-all ${
+                className={`w-full text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 transition-all ${
                   isDark
-                    ? "bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500"
-                    : "bg-slate-50 border border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    ? "bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:ring-[#00BB77]"
+                    : "bg-[#F4F8F5] border border-[#C2DFD0] text-[#1C2E24] placeholder:text-[#4A6356]/70 focus:ring-[#3B7A57]"
                 }`}
               />
             </div>
             <button
               type="submit"
               disabled={isSearching}
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-purple-500/20"
+              className={`w-full sm:w-auto font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg text-white ${
+                isDark
+                  ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:opacity-90 shadow-purple-500/20"
+                  : "bg-gradient-to-r from-[#2D5E43] via-[#3B7A57] to-[#00BB77] hover:bg-[#1C2E24] shadow-[#3B7A57]/20"
+              }`}
             >
               {isSearching ? (
                 <>
@@ -836,20 +879,20 @@ export default function Home() {
           {searchResults && (
             <div
               className={`mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-300 ${
-                isDark ? "border-slate-800/80" : "border-slate-200"
+                isDark ? "border-slate-800/80" : "border-[#C2DFD0]"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#00BB77] animate-pulse" />
-                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                    Dynamic Search Results: <span className="text-purple-500">{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
+                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                    Dynamic Search Results: <span className={isDark ? "text-purple-500" : "text-[#3B7A57]"}>{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
                   </h4>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSearchResults(null)}
-                  className={`text-xs font-mono ${isDark ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"}`}
+                  className={`text-xs font-mono ${isDark ? "text-slate-500 hover:text-slate-300" : "text-[#4A6356] hover:text-[#1C2E24]"}`}
                 >
                   ✕ Close
                 </button>
@@ -862,18 +905,18 @@ export default function Home() {
                     className={`border rounded-xl p-3 flex justify-between items-center hover:border-[#00BB77]/50 transition-all ${
                       isDark
                         ? "bg-slate-950 border-slate-800"
-                        : "bg-slate-50 border-slate-200"
+                        : "bg-[#F4F8F5] border-[#C2DFD0]"
                     }`}
                   >
                     <div>
-                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                        {opt.airline} <span className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>({opt.code})</span>
+                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                        {opt.airline} <span className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>({opt.code})</span>
                       </p>
-                      <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{opt.type} • {opt.duration}</p>
+                      <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>{opt.type} • {opt.duration}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-extrabold text-[#00BB77]">{opt.price}</p>
-                      <span className="text-[9px] text-purple-500 font-mono">Index: {searchResults.jevonsIndex}</span>
+                      <p className={`text-sm font-extrabold ${isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}`}>{opt.price}</p>
+                      <span className={`text-[9px] font-mono ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>Index: {searchResults.jevonsIndex}</span>
                     </div>
                   </div>
                 ))}
@@ -888,16 +931,16 @@ export default function Home() {
             className={`lg:col-span-3 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
               isDark
                 ? "bg-slate-900/50 border-slate-800"
-                : "bg-white border-slate-200 shadow-sm"
+                : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
             }`}
           >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
                     Past History & Index Analytics
                   </h3>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Statistical geometric Jevons index trends over historical time-series horizons
                   </p>
                 </div>
@@ -909,13 +952,13 @@ export default function Home() {
                   className={`border p-3 rounded-xl ${
                     isDark
                       ? "bg-slate-950/80 border-slate-800"
-                      : "bg-slate-50 border-slate-200"
+                      : "bg-[#F4F8F5] border-[#C2DFD0]"
                   }`}
                 >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Est. Current Fare
                   </p>
-                  <p className="text-xl font-bold text-blue-500 mt-0.5">
+                  <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-blue-500" : "text-[#2D5E43]"}`}>
                     ₹{currentPrice.toLocaleString("en-IN")}
                   </p>
                 </div>
@@ -923,25 +966,25 @@ export default function Home() {
                   className={`border p-3 rounded-xl ${
                     isDark
                       ? "bg-slate-950/80 border-slate-800"
-                      : "bg-slate-50 border-slate-200"
+                      : "bg-[#F4F8F5] border-[#C2DFD0]"
                   }`}
                 >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Jevons Index
                   </p>
-                  <p className="text-xl font-bold text-purple-500 mt-0.5">{currentIndex}</p>
+                  <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>{currentIndex}</p>
                 </div>
                 <div
                   className={`border p-3 rounded-xl ${
                     isDark
                       ? "bg-slate-950/80 border-slate-800"
-                      : "bg-slate-50 border-slate-200"
+                      : "bg-[#F4F8F5] border-[#C2DFD0]"
                   }`}
                 >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Min / Max Range
                   </p>
-                  <p className={`text-sm font-bold mt-1 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                  <p className={`text-sm font-bold mt-1 ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>
                     ₹{minPrice.toLocaleString("en-IN")} - ₹{maxPrice.toLocaleString("en-IN")}
                   </p>
                 </div>
@@ -949,15 +992,15 @@ export default function Home() {
                   className={`border p-3 rounded-xl ${
                     isDark
                       ? "bg-slate-950/80 border-slate-800"
-                      : "bg-slate-50 border-slate-200"
+                      : "bg-[#F4F8F5] border-[#C2DFD0]"
                   }`}
                 >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Trend ({timeframe})
                   </p>
                   <p
                     className={`text-xl font-bold mt-0.5 ${
-                      Number(periodChange) >= 0 ? "text-emerald-500" : "text-rose-500"
+                      Number(periodChange) >= 0 ? "text-emerald-600" : "text-rose-600"
                     }`}
                   >
                     {Number(periodChange) >= 0 ? `+${periodChange}%` : `${periodChange}%`}
@@ -970,41 +1013,41 @@ export default function Home() {
                 className={`w-full h-[380px] p-4 rounded-xl border flex items-center justify-center ${
                   isDark
                     ? "bg-slate-950/60 border-slate-800"
-                    : "bg-slate-50/80 border-slate-200"
+                    : "bg-[#F4F8F5] border-[#C2DFD0]"
                 }`}
               >
                 {loading ? (
-                  <div className="text-blue-500 text-sm animate-pulse flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                  <div className={`text-sm animate-pulse flex items-center gap-2 ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
+                    <span className={`w-2 h-2 rounded-full animate-ping ${isDark ? "bg-blue-500" : "bg-[#3B7A57]"}`} />
                     Loading trends for {selectedRoute} (T+{selectedLeadTime})...
                   </div>
                 ) : error ? (
                   <div className="text-center space-y-1">
                     <p className="text-rose-500 text-sm font-medium">Error loading trends</p>
-                    <p className={`text-xs font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>{error}</p>
+                    <p className={`text-xs font-mono ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>{error}</p>
                   </div>
                 ) : filteredData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={filteredData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#e2e8f0"} opacity={0.6} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#C2DFD0"} opacity={0.7} />
                       <XAxis
                         dataKey="calculation_date"
-                        stroke={isDark ? "#64748b" : "#94a3b8"}
-                        tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 11 }}
+                        stroke={isDark ? "#64748b" : "#4A6356"}
+                        tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }}
                         tickLine={false}
                       />
                       <YAxis
-                        stroke={isDark ? "#64748b" : "#94a3b8"}
-                        tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 11 }}
+                        stroke={isDark ? "#64748b" : "#4A6356"}
+                        tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }}
                         domain={["auto", "auto"]}
                         tickLine={false}
                         tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                          borderColor: isDark ? "#334155" : "#cbd5e1",
-                          color: isDark ? "#ffffff" : "#0f172a",
+                          backgroundColor: isDark ? "#0f172a" : "#F4F8F5",
+                          borderColor: isDark ? "#334155" : "#C2DFD0",
+                          color: isDark ? "#ffffff" : "#1C2E24",
                           borderRadius: "0.75rem",
                           boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                         }}
@@ -1020,14 +1063,23 @@ export default function Home() {
                       <Line
                         type="monotone"
                         dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
-                        stroke={metricView === "price" ? "#3b82f6" : "#a855f7"}
+                        stroke={
+                          metricView === "price"
+                            ? isDark ? "#3b82f6" : "#2D5E43"
+                            : isDark ? "#a855f7" : "#3B7A57"
+                        }
                         strokeWidth={2.5}
-                        dot={{ fill: metricView === "price" ? "#3b82f6" : "#a855f7", r: 3 }}
+                        dot={{
+                          fill: metricView === "price"
+                            ? isDark ? "#3b82f6" : "#2D5E43"
+                            : isDark ? "#a855f7" : "#3B7A57",
+                          r: 3
+                        }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
                     No metric entries found for {selectedRoute}.
                   </p>
                 )}
@@ -1036,14 +1088,14 @@ export default function Home() {
 
             <div
               className={`pt-4 border-t flex items-center justify-between text-xs ${
-                isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"
+                isDark ? "border-slate-800/80 text-slate-400" : "border-[#C2DFD0] text-[#4A6356]"
               }`}
             >
               <span className="flex items-center gap-2">
                 <span className="animate-bounce">↓</span>
                 <span>Scroll down or trigger button on right panel to scrape more real-time carrier quotes</span>
               </span>
-              <span className={`font-mono text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+              <span className={`font-mono text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
                 Route: {selectedRoute}
               </span>
             </div>
@@ -1055,32 +1107,32 @@ export default function Home() {
               className={`border rounded-2xl p-4 ${
                 isDark
                   ? "bg-slate-900/50 border-slate-800"
-                  : "bg-white border-slate-200 shadow-sm"
+                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
               }`}
             >
               <h4
                 className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
-                  isDark ? "text-slate-400 border-slate-800" : "text-slate-500 border-slate-200"
+                  isDark ? "text-slate-400 border-slate-800" : "text-[#4A6356] border-[#C2DFD0]"
                 }`}
               >
                 Status of DB & Route Data
               </h4>
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Database Engine</span>
-                  <span className="text-emerald-500 font-mono font-semibold">● Supabase Live</span>
+                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Database Engine</span>
+                  <span className={`font-mono font-semibold ${isDark ? "text-emerald-500" : "text-[#2D5E43]"}`}>● Supabase Live</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Active Routes</span>
-                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-slate-800"}`}>6 City-Pairs</span>
+                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Active Routes</span>
+                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>6 City-Pairs</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Lead Windows</span>
-                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-slate-800"}`}>T+1 to T+45</span>
+                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Lead Windows</span>
+                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>T+1 to T+45</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Scrape Status</span>
-                  <span className="text-blue-500 font-mono">Playwright Ready</span>
+                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Scrape Status</span>
+                  <span className={`font-mono ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>Playwright Ready</span>
                 </div>
               </div>
             </div>
@@ -1089,18 +1141,18 @@ export default function Home() {
               className={`border rounded-2xl p-4 flex flex-col justify-between space-y-4 ${
                 isDark
                   ? "bg-slate-900/50 border-slate-800"
-                  : "bg-white border-slate-200 shadow-sm"
+                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
               }`}
             >
               <div>
                 <h4
                   className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
-                    isDark ? "text-slate-400 border-slate-800" : "text-slate-500 border-slate-200"
+                    isDark ? "text-slate-400 border-slate-800" : "text-[#4A6356] border-[#C2DFD0]"
                   }`}
                 >
                   System Scraping Trigger
                 </h4>
-                <p className={`text-xs leading-relaxed mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                <p className={`text-xs leading-relaxed mb-4 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                   Manually trigger backend Playwright headless workers to scrape current prices across routes.
                 </p>
               </div>
@@ -1112,7 +1164,11 @@ export default function Home() {
                     `Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`
                   )
                 }
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/40"
+                className={`w-full font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all text-white ${
+                  isDark
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 hover:shadow-blue-500/40"
+                    : "bg-[#3B7A57] hover:bg-[#2D5E43] shadow-[#3B7A57]/20 hover:shadow-[#3B7A57]/40"
+                }`}
               >
                 <span>Get More Data (Run Scraper)</span>
                 <span>➔</span>
@@ -1121,31 +1177,32 @@ export default function Home() {
           </aside>
         </div>
 
-        {/* INFORMATION SECTION WITH JADE GREEN (#00BB77) THEME */}
+        {/* INFORMATION SECTION WITH MINT & SAGE GREEN STYLING */}
         <footer
           className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${
-            isDark ? "border-slate-900 text-slate-300" : "border-slate-200 text-slate-700"
+            isDark ? "border-slate-900 text-slate-300" : "border-[#C2DFD0] text-[#1C2E24]"
           }`}
         >
           <div
-            className={`border rounded-2xl p-6 space-y-3 transition-all duration-300 shadow-lg shadow-[#00BB77]/5 ${
-              isDark ? "bg-slate-900/40" : "bg-white"
+            className={`border rounded-2xl p-6 space-y-3 transition-all duration-300 shadow-lg ${
+              isDark
+                ? "bg-slate-900/40 border-[#00BB77] shadow-[#00BB77]/5"
+                : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
             }`}
-            style={{ borderColor: "#00BB77" }}
           >
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#00BB77" }} />
-              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${isDark ? "bg-[#00BB77]" : "bg-[#3B7A57]"}`} />
+              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
                 Purpose of NAPIER
               </h3>
             </div>
-            <p className="text-xs leading-relaxed">
+            <p className={`text-xs leading-relaxed ${isDark ? "text-slate-300" : "text-[#4A6356]"}`}>
               The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> was constructed to address volatile dynamic pricing algorithms across Indian domestic aviation sectors. By monitoring pricing behaviors across advance purchase windows (T+1 to T+45 days), NAPIER brings market transparency to travelers, enterprise procurement teams, and aviation analysts.
             </p>
-            <ul className="text-xs space-y-2 list-disc list-inside pt-1">
-              <li><strong style={{ color: "#00BB77" }}>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
-              <li><strong style={{ color: "#00BB77" }}>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
-              <li><strong style={{ color: "#00BB77" }}>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
+            <ul className={`text-xs space-y-2 list-disc list-inside pt-1 ${isDark ? "text-slate-300" : "text-[#4A6356]"}`}>
+              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
+              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
+              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
             </ul>
           </div>
 
@@ -1153,25 +1210,25 @@ export default function Home() {
             className={`border rounded-2xl p-6 space-y-3 ${
               isDark
                 ? "bg-slate-900/40 border-slate-800/80"
-                : "bg-white border-slate-200 shadow-sm"
+                : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-500" />
-              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+              <span className={`w-2 h-2 rounded-full ${isDark ? "bg-purple-500" : "bg-[#3B7A57]"}`} />
+              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
                 About Us
               </h3>
             </div>
-            <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+            <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
               NAPIER is an open statistical initiative built by data engineers and aviation economists. We aim to offer an unbiased index metric for domestic air travel, acting as a standardized market barometer similar to traditional consumer price indexes.
             </p>
-            <div className={`pt-2 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-              <p><strong className={isDark ? "text-slate-300" : "text-slate-800"}>Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
-              <p><strong className={isDark ? "text-slate-300" : "text-slate-800"}>Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
+            <div className={`pt-2 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+              <p><strong className={isDark ? "text-slate-300" : "text-[#1C2E24]"}>Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
+              <p><strong className={isDark ? "text-slate-300" : "text-[#1C2E24]"}>Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
             </div>
             <div
               className={`pt-2 text-[11px] border-t flex justify-between items-center ${
-                isDark ? "text-slate-500 border-slate-800/60" : "text-slate-400 border-slate-200"
+                isDark ? "text-slate-500 border-slate-800/60" : "text-[#4A6356]/70 border-[#C2DFD0]"
               }`}
             >
               <span>© 2026 NAPIER Engine</span>
