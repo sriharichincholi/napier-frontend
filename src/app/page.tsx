@@ -374,6 +374,7 @@ export default function Home() {
   };
 
   const isDark = theme === "dark";
+  const numChange = Number(periodChange);
 
   return (
     <div
@@ -381,7 +382,7 @@ export default function Home() {
         isDark ? "bg-slate-950 text-slate-100" : "bg-[#F4F8F5] text-[#1C2E24]"
       }`}
     >
-      {/* HEADER SECTION WITH LOGO, THEME TOGGLE & AI BUTTON */}
+      {/* HEADER SECTION */}
       <header
         className={`p-6 border-b sticky top-0 z-40 flex items-center justify-between backdrop-blur transition-colors ${
           isDark
@@ -443,9 +444,8 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Top Right Control Group: Theme Switcher & AI Assistant */}
+        {/* Top Right Controls */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-          {/* DARK / BRIGHT MINT-SAGE TOGGLE BUTTON */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
@@ -457,27 +457,16 @@ export default function Home() {
             title={isDark ? "Switch to Mint / Sage Light Mode" : "Switch to Dark Mode"}
           >
             {isDark ? (
-              /* Sun Icon for Light Mode */
-              <svg
-                className="w-5 h-5 fill-current"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                 <path d="M12 17.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zm0 1.5a7 7 0 110-14 7 7 0 010 14zm0-17a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0112 2zm0 18a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0112 20zM4.223 4.223a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.06l-1.061-1.06a.75.75 0 010-1.06zm12.728 12.728a.75.75 0 011.06 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.061a.75.75 0 010-1.06zM2 12a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 012 12zm18 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 0120 12zM4.223 19.777a.75.75 0 010-1.06l1.06-1.061a.75.75 0 011.061 1.06l-1.06 1.061a.75.75 0 01-1.061 0zm12.728-12.728a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.061 1.06l-1.06 1.06a.75.75 0 01-1.061 0z" />
               </svg>
             ) : (
-              /* Moon Icon for Dark Mode */
-              <svg
-                className="w-5 h-5 fill-current"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                 <path d="M9.5 2a.75.75 0 01.75.75A9.75 9.75 0 0019.25 12.5a.75.75 0 01.62 1.17A10.5 10.5 0 119.33 2.13.75.75 0 019.5 2z" />
               </svg>
             )}
           </button>
 
-          {/* AI Sidebar Launcher Button */}
           <button
             onClick={() => setIsAiSidebarOpen(true)}
             className={`font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shrink-0 text-white ${
@@ -491,7 +480,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* FLOATING ACTION TRIGGER BUTTON FOR AI SIDEBAR */}
+      {/* FLOATING ACTION TRIGGER BUTTON */}
       <button
         onClick={() => setIsAiSidebarOpen((prev) => !prev)}
         className={`fixed bottom-6 right-6 z-40 hover:scale-105 transition-all duration-300 p-4 rounded-full shadow-2xl border border-white/20 flex items-center justify-center group ${
@@ -507,7 +496,7 @@ export default function Home() {
         </span>
       </button>
 
-      {/* SLIDING AI DRAWER SIDEBAR */}
+      {/* SLIDING AI SIDEBAR */}
       {isAiSidebarOpen && (
         <div
           className={`fixed inset-0 backdrop-blur-sm z-50 transition-opacity ${
@@ -526,7 +515,6 @@ export default function Home() {
             : "bg-[#F4F8F5] border-[#C2DFD0]"
         }`}
       >
-        {/* Sidebar Header */}
         <div
           className={`p-4 border-b flex items-center justify-between ${
             isDark
@@ -548,7 +536,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Chat Messages Log */}
         <div className={`flex-1 p-4 overflow-y-auto space-y-3 text-xs ${isDark ? "bg-slate-950/50" : "bg-[#F4F8F5]"}`}>
           {chatMessages.map((msg, i) => (
             <div
@@ -568,7 +555,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Chat Input Area */}
         <div
           className={`p-4 border-t ${
             isDark ? "border-slate-800 bg-slate-950/80" : "border-[#D8E6DF] bg-[#E8F0EC]"
@@ -601,7 +587,7 @@ export default function Home() {
       </aside>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
-        {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX */}
+        {/* CARRIER MATRIX */}
         <section
           className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
             isDark
@@ -694,7 +680,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* PARAMETER CONTROL BAR */}
+        {/* PARAMETERS BAR */}
         <section
           className={`border p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
             isDark
@@ -828,7 +814,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* DYNAMIC EXPANDABLE SEARCH BOX - ALL ROUTES ENABLED */}
+        {/* SEARCH BOX */}
         <section
           className={`border rounded-2xl p-4 shadow-xl transition-all duration-500 ${
             isDark
@@ -925,7 +911,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* MAIN WORKSPACE GRID */}
+        {/* WORKSPACE & GRAPH AREA */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <main
             className={`lg:col-span-3 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
@@ -946,7 +932,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Summary Metric Cards */}
+              {/* SUMMARY METRIC CARDS */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <div
                   className={`border p-3 rounded-xl ${
@@ -988,6 +974,8 @@ export default function Home() {
                     ₹{minPrice.toLocaleString("en-IN")} - ₹{maxPrice.toLocaleString("en-IN")}
                   </p>
                 </div>
+
+                {/* UPDATED TREND CARD: Price Drop = Green, Price Hike = Red */}
                 <div
                   className={`border p-3 rounded-xl ${
                     isDark
@@ -1000,15 +988,21 @@ export default function Home() {
                   </p>
                   <p
                     className={`text-xl font-bold mt-0.5 ${
-                      Number(periodChange) >= 0 ? "text-emerald-600" : "text-rose-600"
+                      numChange < 0
+                        ? "text-emerald-500" // Drop in price = GREEN (Good)
+                        : numChange > 0
+                        ? "text-rose-500"    // Spike in price = RED (Bad)
+                        : isDark
+                        ? "text-slate-200"
+                        : "text-[#1C2E24]"
                     }`}
                   >
-                    {Number(periodChange) >= 0 ? `+${periodChange}%` : `${periodChange}%`}
+                    {numChange > 0 ? `+${periodChange}%` : `${periodChange}%`}
                   </p>
                 </div>
               </div>
 
-              {/* Chart Viewport */}
+              {/* CHART VIEWPORT */}
               <div
                 className={`w-full h-[380px] p-4 rounded-xl border flex items-center justify-center ${
                   isDark
@@ -1101,7 +1095,7 @@ export default function Home() {
             </div>
           </main>
 
-          {/* RIGHT COLUMN: SIDEBAR */}
+          {/* SIDEBAR */}
           <aside className="lg:col-span-1 flex flex-col gap-6">
             <div
               className={`border rounded-2xl p-4 ${
@@ -1177,7 +1171,7 @@ export default function Home() {
           </aside>
         </div>
 
-        {/* INFORMATION SECTION WITH MINT & SAGE GREEN STYLING */}
+        {/* FOOTER */}
         <footer
           className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${
             isDark ? "border-slate-900 text-slate-300" : "border-[#C2DFD0] text-[#1C2E24]"
