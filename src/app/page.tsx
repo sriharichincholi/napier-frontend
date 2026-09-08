@@ -14,7 +14,32 @@ import {
 type TimeFrame = "7d" | "30d" | "90d" | "ALL";
 type MetricView = "price" | "index";
 
-const AVAILABLE_ROUTES = [
+interface RouteOption {
+  code: string;
+  label: string;
+  origin: string;
+  dest: string;
+}
+
+interface LeadWindowOption {
+  value: number;
+  label: string;
+}
+
+interface IndexTrendItem {
+  calculation_date: string;
+  jevons_index_value?: number;
+  jevons_index?: number;
+  estimated_price?: number;
+  [key: string]: unknown;
+}
+
+interface ChatMessage {
+  sender: "ai" | "user";
+  text: string;
+}
+
+const AVAILABLE_ROUTES: RouteOption[] = [
   { code: "DEL-BOM", label: "Delhi → Mumbai", origin: "DEL", dest: "BOM" },
   { code: "DEL-BLR", label: "Delhi → Bengaluru", origin: "DEL", dest: "BLR" },
   { code: "BOM-BLR", label: "Mumbai → Bengaluru", origin: "BOM", dest: "BLR" },
@@ -23,7 +48,7 @@ const AVAILABLE_ROUTES = [
   { code: "MAA-DEL", label: "Chennai → Delhi", origin: "MAA", dest: "DEL" },
 ];
 
-const LEAD_WINDOWS = [
+const LEAD_WINDOWS: LeadWindowOption[] = [
   { value: 1, label: "T+1 Day" },
   { value: 7, label: "T+7 Days" },
   { value: 15, label: "T+15 Days" },
@@ -32,7 +57,7 @@ const LEAD_WINDOWS = [
 ];
 
 export default function Home() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<IndexTrendItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,18 +68,21 @@ export default function Home() {
   const [metricView, setMetricView] = useState<MetricView>("price");
 
   // Chatbot State
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: "ai" | "user"; text: string }>>([
-    { sender: "ai", text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes." },
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      sender: "ai",
+      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, anomalies, or lead-time pricing across routes.",
+    },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
 
-  const chartRef = useRef<HTMLDivElement>(null);
-
   const activeRouteObj = useMemo(() => {
-    return AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0];
+    return (
+      AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0]
+    );
   }, [selectedRoute]);
 
-  // Generate target departure date for carrier deep-links
+  // Target departure date calculation
   const targetDateStr = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + selectedLeadTime);
@@ -83,7 +111,7 @@ export default function Home() {
         if (Array.isArray(list) && list.length > 0) {
           const BASE_AIRFARE_INR = 4500;
 
-          const formatted = list.map((item: any) => {
+          const formatted: IndexTrendItem[] = list.map((item: IndexTrendItem) => {
             const rawIndex = item.jevons_index_value ?? item.jevons_index ?? 100;
             const estimatedPrice = Math.round(BASE_AIRFARE_INR * (rawIndex / 100));
 
@@ -97,10 +125,14 @@ export default function Home() {
         } else {
           setData([]);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Fetch error:", err);
-        setError(err.message || "Failed to connect to index service");
-      } font-medium
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to connect to index service");
+        }
+      } finally {
         setLoading(false);
       }
     };
@@ -123,25 +155,24 @@ export default function Home() {
     ? filteredData[0]
     : { estimated_price: 5000, jevons_index: 100 };
 
-  const currentPrice = latestItem.estimated_price;
-  const currentIndex = latestItem.jevons_index;
+  const currentPrice = latestItem.estimated_price ?? 5000;
+  const currentIndex = latestItem.jevons_index ?? 100;
 
   const minPrice = filteredData.length
-    ? Math.min(...filteredData.map((d) => d.estimated_price))
+    ? Math.min(...filteredData.map((d) => d.estimated_price ?? 5000))
     : 5000;
   const maxPrice = filteredData.length
-    ? Math.max(...filteredData.map((d) => d.estimated_price))
+    ? Math.max(...filteredData.map((d) => d.estimated_price ?? 5000))
     : 5000;
 
   const periodChange = filteredData.length
     ? (
-        ((latestItem.estimated_price - firstItem.estimated_price) /
-          firstItem.estimated_price) *
+        (((latestItem.estimated_price ?? 5000) - (firstItem.estimated_price ?? 5000)) /
+          (firstItem.estimated_price ?? 5000)) *
         100
       ).toFixed(1)
     : "0.0";
 
-  // Dynamic airline live cards with verification hyperlinked deep-links
   const airlineCards = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
@@ -149,35 +180,30 @@ export default function Home() {
       {
         name: "IndiGo",
         code: "6E",
-        color: "from-blue-600 to-indigo-800",
         price: Math.round(currentPrice * 0.96),
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20IndiGo`,
       },
       {
         name: "Air India",
         code: "AI",
-        color: "from-red-600 to-rose-900",
         price: Math.round(currentPrice * 1.08),
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India`,
       },
       {
         name: "Air India Express",
         code: "IX",
-        color: "from-orange-500 to-amber-700",
         price: Math.round(currentPrice * 0.92),
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India%20Express`,
       },
       {
         name: "Akasa Air",
         code: "QP",
-        color: "from-purple-600 to-violet-900",
         price: Math.round(currentPrice * 0.94),
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Akasa%20Air`,
       },
       {
         name: "SpiceJet",
         code: "SG",
-        color: "from-amber-600 to-red-800",
         price: Math.round(currentPrice * 0.98),
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20SpiceJet`,
       },
@@ -193,10 +219,16 @@ export default function Home() {
     setChatInput("");
 
     setTimeout(() => {
-      let aiReply = `For ${selectedRoute} (T+${selectedLeadTime}), current estimated fare is ₹${currentPrice.toLocaleString("en-IN")} with a Jevons index of ${currentIndex}.`;
-      if (userText.toLowerCase().includes("cheapest") || userText.toLowerCase().includes("best")) {
-        aiReply = `Air India Express and IndiGo offer the most competitive real-time rates for ${selectedRoute} at ~₹${Math.round(currentPrice * 0.92).toLocaleString("en-IN")}.`;
-      } else if (userText.toLowerCase().includes("trend") || userText.toLowerCase().includes("predict")) {
+      let aiReply = `For ${selectedRoute} (T+${selectedLeadTime}), current estimated fare is ₹${currentPrice.toLocaleString(
+        "en-IN"
+      )} with a Jevons index of ${currentIndex}.`;
+      
+      const textLower = userText.toLowerCase();
+      if (textLower.includes("cheapest") || textLower.includes("best")) {
+        aiReply = `Air India Express and IndiGo offer the most competitive real-time rates for ${selectedRoute} at ~₹${Math.round(
+          currentPrice * 0.92
+        ).toLocaleString("en-IN")}.`;
+      } else if (textLower.includes("trend") || textLower.includes("predict")) {
         aiReply = `Over the selected period, ${selectedRoute} displays a ${periodChange}% price movement. Booking at T+15 or higher minimizes volatility.`;
       }
       setChatMessages((prev) => [...prev, { sender: "ai", text: aiReply }]);
@@ -205,7 +237,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
       {/* HEADER SECTION */}
       <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
@@ -217,8 +248,7 @@ export default function Home() {
       </header>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
-        
-        {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX & HYPERLINKS */}
+        {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX */}
         <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b border-slate-800/80 pb-3">
             <div>
@@ -269,8 +299,6 @@ export default function Home() {
 
         {/* PARAMETER CONTROL BAR */}
         <section className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          
-          {/* City-Pair Route Dropdown */}
           <div className="flex flex-col gap-1 w-full lg:w-auto">
             <label className="text-xs text-slate-400 font-medium">City-Pair Route</label>
             <select
@@ -286,7 +314,6 @@ export default function Home() {
             </select>
           </div>
 
-          {/* Advance Purchase Window */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400 font-medium">Advance Purchase Window</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
@@ -306,7 +333,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Metric Toggle */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400 font-medium">Metric Display</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
@@ -333,7 +359,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Timeframe Selector */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400 font-medium">Timeframe</label>
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
@@ -352,13 +377,10 @@ export default function Home() {
               ))}
             </div>
           </div>
-
         </section>
 
-        {/* MAIN WORKSPACE GRID: Left = Chart & Past History | Right = DB Telematics & AI Chatbot */}
+        {/* MAIN WORKSPACE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          
-          {/* LEFT 3 COLUMNS: PAST HISTORY & RECHARTS GRAPH */}
           <main className="lg:col-span-3 border border-slate-800 rounded-2xl p-5 bg-slate-900/50 flex flex-col justify-between space-y-6">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -435,7 +457,7 @@ export default function Home() {
                           borderColor: "#334155",
                           borderRadius: "0.75rem",
                         }}
-                        formatter={(val: any) => [
+                        formatter={(val: number) => [
                           metricView === "price" ? `₹${val.toLocaleString("en-IN")}` : val,
                           metricView === "price" ? "Estimated Fare" : "Jevons Index",
                         ]}
@@ -455,7 +477,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scroll Indicator for Real Time Data */}
             <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-2">
                 <span className="animate-bounce">↓</span>
@@ -465,10 +486,8 @@ export default function Home() {
             </div>
           </main>
 
-          {/* RIGHT 1 COLUMN: SIDEBAR (DB STATUS + AI CHATBOT + SCRAPER TRIGGER) */}
+          {/* RIGHT COLUMN: SIDEBAR */}
           <aside className="lg:col-span-1 flex flex-col gap-6">
-            
-            {/* STATUS OF DB AND ROUTE DATA */}
             <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50">
               <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
                 Status of DB & Route Data
@@ -493,14 +512,12 @@ export default function Home() {
               </div>
             </div>
 
-            {/* AI ASSISTANT / CHATBOT & GET MORE DATA TRIGGER */}
             <div className="flex-1 border border-slate-800 rounded-2xl p-4 bg-slate-900/50 flex flex-col justify-between space-y-4">
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
                   AI Assistant / Chatbot
                 </h4>
                 
-                {/* Chat window */}
                 <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
                   <div className="overflow-y-auto space-y-2 pr-1 text-xs">
                     {chatMessages.map((msg, i) => (
@@ -535,23 +552,23 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Get More Data Trigger */}
               <button
-                onClick={() => alert(`Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`)}
+                onClick={() =>
+                  alert(
+                    `Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`
+                  )
+                }
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/40"
               >
                 <span>Get More Data (Run Scraper)</span>
                 <span>➔</span>
               </button>
             </div>
-
           </aside>
         </div>
 
         {/* INFORMATION SECTION: ABOUT US & PURPOSE OF NAPIER */}
         <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-900 text-slate-300">
-          
-          {/* PURPOSE OF NAPIER */}
           <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -567,7 +584,6 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* ABOUT US */}
           <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-purple-500" />
@@ -585,9 +601,7 @@ export default function Home() {
               <span>v1.0.4 Live Telemetry</span>
             </div>
           </div>
-
         </footer>
-
       </div>
     </div>
   );
