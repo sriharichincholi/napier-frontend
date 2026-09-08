@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -222,7 +222,7 @@ export default function Home() {
       let aiReply = `For ${selectedRoute} (T+${selectedLeadTime}), current estimated fare is ₹${currentPrice.toLocaleString(
         "en-IN"
       )} with a Jevons index of ${currentIndex}.`;
-      
+
       const textLower = userText.toLowerCase();
       if (textLower.includes("cheapest") || textLower.includes("best")) {
         aiReply = `Air India Express and IndiGo offer the most competitive real-time rates for ${selectedRoute} at ~₹${Math.round(
@@ -237,11 +237,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* HEADER SECTION */}
+      {/* HEADER SECTION WITH LOGO GLOW */}
       <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 flex flex-col items-center text-center">
-        <h1 className="text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
-          NAPIER
-        </h1>
+        <div className="relative group flex items-center justify-center">
+          {/* Pulsing ambient glow effect behind main logo */}
+          <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 rounded-full blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
+          
+          <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 drop-shadow-md">
+            NAPIER
+          </h1>
+        </div>
         <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-1 tracking-wide">
           National Airfare Price Index Engine Real-time
         </p>
@@ -451,22 +456,21 @@ export default function Home() {
                         tickLine={false}
                         tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
                       />
-// ✅ Corrected Tooltip component:
-<Tooltip
-  contentStyle={{
-    backgroundColor: "#0f172a",
-    borderColor: "#334155",
-    borderRadius: "0.75rem",
-  }}
-  formatter={(val: any) => [
-    val !== undefined
-      ? metricView === "price"
-        ? `₹${Number(val).toLocaleString("en-IN")}`
-        : val
-      : "N/A",
-    metricView === "price" ? "Estimated Fare" : "Jevons Index",
-  ]}
-/>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#0f172a",
+                          borderColor: "#334155",
+                          borderRadius: "0.75rem",
+                        }}
+                        formatter={(val: unknown) => [
+                          val !== undefined
+                            ? metricView === "price"
+                              ? `₹${Number(val).toLocaleString("en-IN")}`
+                              : val
+                            : "N/A",
+                          metricView === "price" ? "Estimated Fare" : "Jevons Index",
+                        ]}
+                      />
                       <Line
                         type="monotone"
                         dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
@@ -522,7 +526,7 @@ export default function Home() {
                 <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
                   AI Assistant / Chatbot
                 </h4>
-                
+
                 <div className="h-56 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
                   <div className="overflow-y-auto space-y-2 pr-1 text-xs">
                     {chatMessages.map((msg, i) => (
@@ -572,20 +576,23 @@ export default function Home() {
           </aside>
         </div>
 
-        {/* INFORMATION SECTION: ABOUT US & PURPOSE OF NAPIER */}
+        {/* INFORMATION SECTION WITH JADE GREEN (#00BB77) THEME */}
         <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-900 text-slate-300">
-          <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
+          <div 
+            className="border rounded-2xl p-6 bg-slate-900/40 space-y-3 transition-all duration-300 shadow-lg shadow-[#00BB77]/5"
+            style={{ borderColor: "#00BB77" }}
+          >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#00BB77" }} />
               <h3 className="text-lg font-bold text-white">Purpose of NAPIER</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> was constructed to address volatile dynamic pricing algorithms across Indian domestic aviation sectors. By monitoring pricing behaviors across advance purchase windows (T+1 to T+45 days), NAPIER brings market transparency to travelers, enterprise procurement teams, and aviation analysts.
             </p>
-            <ul className="text-xs text-slate-400 space-y-2 list-disc list-inside pt-1">
-              <li><strong>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
-              <li><strong>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
-              <li><strong>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
+            <ul className="text-xs text-slate-300 space-y-2 list-disc list-inside pt-1">
+              <li><strong style={{ color: "#00BB77" }}>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
+              <li><strong style={{ color: "#00BB77" }}>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
+              <li><strong style={{ color: "#00BB77" }}>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
             </ul>
           </div>
 
