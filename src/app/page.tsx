@@ -13,6 +13,7 @@ import {
 
 type TimeFrame = "7d" | "30d" | "90d" | "ALL";
 type MetricView = "price" | "index";
+type ThemeMode = "dark" | "light";
 
 interface RouteOption {
   code: string;
@@ -100,6 +101,9 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Theme State (Dark / Bright)
+  const [theme, setTheme] = useState<ThemeMode>("dark");
+
   // Filter States
   const [selectedRoute, setSelectedRoute] = useState<string>("DEL-BOM");
   const [selectedLeadTime, setSelectedLeadTime] = useState<number>(15);
@@ -120,6 +124,10 @@ export default function Home() {
     },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const activeRouteObj = useMemo(() => {
     return (
@@ -346,29 +354,18 @@ export default function Home() {
       const textLower = userText.toLowerCase().trim();
       let aiReply = "";
 
-      // 1. Greetings logic
       if (/^(hi|hello|hey|greetings|hola|good\s?(morning|afternoon|evening))/i.test(textLower)) {
         aiReply = `Hello! How can I assist you with ${activeRouteObj.label} (${selectedRoute}) airfare data, price predictions, or Jevons index trends today?`;
-      } 
-      // 2. Cheapest fare queries
-      else if (textLower.includes("cheapest") || textLower.includes("best price") || textLower.includes("lowest")) {
+      } else if (textLower.includes("cheapest") || textLower.includes("best price") || textLower.includes("lowest")) {
         const lowestFare = Math.round(currentPrice * 0.92);
         aiReply = `Air India Express and IndiGo currently offer the most competitive real-time rates for ${selectedRoute} (T+${selectedLeadTime}) starting at ~₹${lowestFare.toLocaleString("en-IN")}.`;
-      } 
-      // 3. Trends and predictions
-      else if (textLower.includes("trend") || textLower.includes("predict") || textLower.includes("forecast") || textLower.includes("price")) {
+      } else if (textLower.includes("trend") || textLower.includes("predict") || textLower.includes("forecast") || textLower.includes("price")) {
         aiReply = `Over the selected ${timeframe} timeframe, ${selectedRoute} displays a ${periodChange}% price movement. Current estimated average fare is ₹${currentPrice.toLocaleString("en-IN")}. Booking at T+15 or higher minimizes volatility.`;
-      } 
-      // 4. Jevons index explanation
-      else if (textLower.includes("jevons") || textLower.includes("index") || textLower.includes("formula")) {
+      } else if (textLower.includes("jevons") || textLower.includes("index") || textLower.includes("formula")) {
         aiReply = `The current Jevons Index for ${selectedRoute} is ${currentIndex}. It calculates the unweighted geometric mean of prices across airlines to filter out outlier pricing spikes.`;
-      } 
-      // 5. Booking / Action queries (Out of scope)
-      else if (textLower.includes("book") || textLower.includes("buy ticket") || textLower.includes("seat")) {
+      } else if (textLower.includes("book") || textLower.includes("buy ticket") || textLower.includes("seat")) {
         aiReply = `I apologize, but I cannot directly book tickets or select seats. You can click any carrier card in the live matrix above to verify and purchase tickets directly through Google Travel or official airline sites.`;
-      } 
-      // 6. General Fallback / Apology message
-      else {
+      } else {
         aiReply = `I apologize, but I am currently specialized in analyzing airfare trends, Jevons index metrics, and optimal booking windows for domestic routes. I couldn't fulfill that specific query. Feel free to ask me about cheapest fares, price movements, or route predictions for ${selectedRoute}!`;
       }
 
@@ -376,10 +373,23 @@ export default function Home() {
     }, 500);
   };
 
+  // Dynamic Theme Colors
+  const isDark = theme === "dark";
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative overflow-x-hidden">
-      {/* HEADER SECTION WITH LOGO & AI TOGGLE BUTTON */}
-      <header className="p-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-40 flex items-center justify-between">
+    <div
+      className={`min-h-screen flex flex-col font-sans relative overflow-x-hidden transition-colors duration-300 ${
+        isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}
+    >
+      {/* HEADER SECTION WITH LOGO, THEME TOGGLE & AI BUTTON */}
+      <header
+        className={`p-6 border-b sticky top-0 z-40 flex items-center justify-between backdrop-blur transition-colors ${
+          isDark
+            ? "border-slate-900 bg-slate-950/80"
+            : "border-slate-200 bg-white/80"
+        }`}
+      >
         <div className="flex-1 flex flex-col items-center text-center pl-10">
           <div className="relative group flex items-center justify-center gap-3">
             <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-indigo-500 to-[#00BB77] rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
@@ -400,23 +410,64 @@ export default function Home() {
               </svg>
             </div>
 
-            <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-[#00BB77] drop-shadow-md">
+            <h1 className="relative text-4xl md:text-5xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-indigo-500 to-[#00BB77] drop-shadow-md">
               NAPIER
             </h1>
           </div>
 
-          <p className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 mt-2 tracking-wide">
+          <p
+            className={`text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r ${
+              isDark
+                ? "from-purple-400 via-pink-400 to-amber-300"
+                : "from-purple-600 via-pink-600 to-amber-600"
+            } mt-2 tracking-wide`}
+          >
             National Airfare Price Index Engine Real-time
           </p>
         </div>
 
-        {/* AI Sidebar Launcher Button in Header */}
-        <button
-          onClick={() => setIsAiSidebarOpen(true)}
-          className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 shrink-0"
-        >
-          <span>✨ AI Assistant</span>
-        </button>
+        {/* Top Right Control Group: Theme Switcher & AI Assistant */}
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          {/* DARK / BRIGHT MODE TOGGLE BUTTON */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+            className={`p-2.5 rounded-xl border transition-all flex items-center justify-center shadow-md ${
+              isDark
+                ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800"
+                : "bg-slate-100 border-slate-300 text-indigo-600 hover:bg-slate-200"
+            }`}
+            title={isDark ? "Switch to Bright Mode" : "Switch to Dark Mode"}
+          >
+            {isDark ? (
+              /* Sun Icon for Light Mode */
+              <svg
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M12 17.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zm0 1.5a7 7 0 110-14 7 7 0 010 14zm0-17a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0112 2zm0 18a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0112 20zM4.223 4.223a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.06l-1.061-1.06a.75.75 0 010-1.06zm12.728 12.728a.75.75 0 011.06 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.061a.75.75 0 010-1.06zM2 12a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 012 12zm18 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 0120 12zM4.223 19.777a.75.75 0 010-1.06l1.06-1.061a.75.75 0 011.061 1.06l-1.06 1.061a.75.75 0 01-1.061 0zm12.728-12.728a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.061 1.06l-1.06 1.06a.75.75 0 01-1.061 0z" />
+              </svg>
+            ) : (
+              /* Moon Icon for Dark Mode */
+              <svg
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M9.5 2a.75.75 0 01.75.75A9.75 9.75 0 0019.25 12.5a.75.75 0 01.62 1.17A10.5 10.5 0 119.33 2.13.75.75 0 019.5 2z" />
+              </svg>
+            )}
+          </button>
+
+          {/* AI Sidebar Launcher Button */}
+          <button
+            onClick={() => setIsAiSidebarOpen(true)}
+            className="bg-gradient-to-r from-purple-600 to-[#00BB77] hover:opacity-90 text-white font-bold text-xs md:text-sm px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 shrink-0"
+          >
+            <span>✨ AI Assistant</span>
+          </button>
+        </div>
       </header>
 
       {/* FLOATING ACTION TRIGGER BUTTON FOR AI SIDEBAR */}
@@ -434,39 +485,53 @@ export default function Home() {
       {/* SLIDING AI DRAWER SIDEBAR */}
       {isAiSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity"
+          className={`fixed inset-0 backdrop-blur-sm z-50 transition-opacity ${
+            isDark ? "bg-slate-950/60" : "bg-slate-900/40"
+          }`}
           onClick={() => setIsAiSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-slate-900 border-l border-slate-800 z-50 shadow-2xl transition-transform duration-300 transform flex flex-col justify-between ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 border-l z-50 shadow-2xl transition-transform duration-300 transform flex flex-col justify-between ${
           isAiSidebarOpen ? "translate-x-0" : "translate-x-full"
+        } ${
+          isDark
+            ? "bg-slate-900 border-slate-800"
+            : "bg-white border-slate-200"
         }`}
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div
+          className={`p-4 border-b flex items-center justify-between ${
+            isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-slate-50"
+          }`}
+        >
           <div className="flex items-center gap-2">
             <span className="text-lg">✨</span>
-            <h3 className="text-sm font-bold text-white">NAPIER AI Assistant</h3>
+            <h3 className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+              NAPIER AI Assistant
+            </h3>
           </div>
           <button
             onClick={() => setIsAiSidebarOpen(false)}
-            className="text-slate-400 hover:text-white text-lg font-mono p-1"
+            className={`${isDark ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-slate-900"} text-lg font-mono p-1`}
           >
             ✕
           </button>
         </div>
 
         {/* Chat Messages Log */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-950/50">
+        <div className={`flex-1 p-4 overflow-y-auto space-y-3 text-xs ${isDark ? "bg-slate-950/50" : "bg-slate-50/50"}`}>
           {chatMessages.map((msg, i) => (
             <div
               key={i}
               className={`p-3 rounded-xl max-w-[85%] ${
                 msg.sender === "user"
                   ? "bg-purple-600 text-white ml-auto text-right shadow-md shadow-purple-600/20"
-                  : "bg-slate-900 border border-slate-800 text-slate-200 mr-auto shadow-md"
+                  : isDark
+                  ? "bg-slate-900 border border-slate-800 text-slate-200 mr-auto shadow-md"
+                  : "bg-white border border-slate-200 text-slate-800 mr-auto shadow-sm"
               }`}
             >
               {msg.text}
@@ -475,14 +540,22 @@ export default function Home() {
         </div>
 
         {/* Chat Input Area */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80">
+        <div
+          className={`p-4 border-t ${
+            isDark ? "border-slate-800 bg-slate-950/80" : "border-slate-200 bg-white"
+          }`}
+        >
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
               type="text"
               placeholder="Ask about trends, predictions..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-800 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00BB77]"
+              className={`flex-1 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00BB77] ${
+                isDark
+                  ? "bg-slate-900 border border-slate-800 text-white"
+                  : "bg-slate-100 border border-slate-200 text-slate-900"
+              }`}
             />
             <button
               type="submit"
@@ -496,18 +569,38 @@ export default function Home() {
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
         {/* TOP HERO: REAL-TIME CARRIER FARE MATRIX */}
-        <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-2xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b border-slate-800/80 pb-3">
+        <section
+          className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
+            isDark
+              ? "bg-slate-900/60 border-slate-800"
+              : "bg-white/80 border-slate-200 shadow-slate-200/50"
+          }`}
+        >
+          <div
+            className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b pb-3 ${
+              isDark ? "border-slate-800/80" : "border-slate-200"
+            }`}
+          >
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2
+                className={`text-lg font-bold flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
                 Real-Time Live Airline Fares
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 Click any carrier card to verify live fares directly on official booking search cards for {activeRouteObj.label} ({targetDateStr})
               </p>
             </div>
-            <span className="text-xs font-mono bg-slate-950 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30">
+            <span
+              className={`text-xs font-mono px-3 py-1 rounded-full border ${
+                isDark
+                  ? "bg-slate-950 text-emerald-400 border-emerald-500/30"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`}
+            >
               ● Live Scrape Stream Active
             </span>
           </div>
@@ -519,23 +612,47 @@ export default function Home() {
                 href={carrier.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative bg-slate-950 border border-slate-800 hover:border-blue-500/50 rounded-xl p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/10"
+                className={`group relative border rounded-xl p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                  isDark
+                    ? "bg-slate-950 border-slate-800 hover:border-blue-500/50 hover:shadow-blue-500/10"
+                    : "bg-slate-50 border-slate-200 hover:border-blue-400 hover:bg-white hover:shadow-slate-200"
+                }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 group-hover:text-blue-400">
+                  <span
+                    className={`text-xs font-bold ${
+                      isDark
+                        ? "text-slate-300 group-hover:text-blue-400"
+                        : "text-slate-700 group-hover:text-blue-600"
+                    }`}
+                  >
                     {carrier.name}
                   </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                      isDark
+                        ? "bg-slate-800 text-slate-400"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
                     {carrier.code}
                   </span>
                 </div>
                 <div className="mt-3">
-                  <p className="text-xs text-slate-500">Live Scraped Fare</p>
-                  <p className="text-lg font-extrabold text-white group-hover:text-emerald-400 transition-colors">
+                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    Live Scraped Fare
+                  </p>
+                  <p
+                    className={`text-lg font-extrabold ${
+                      isDark
+                        ? "text-white group-hover:text-emerald-400"
+                        : "text-slate-900 group-hover:text-emerald-600"
+                    } transition-colors`}
+                  >
                     ₹{carrier.price.toLocaleString("en-IN")}
                   </p>
                 </div>
-                <div className="mt-2 text-[10px] text-blue-400 flex items-center gap-1 group-hover:underline">
+                <div className="mt-2 text-[10px] text-blue-500 flex items-center gap-1 group-hover:underline">
                   <span>Verify Fare</span>
                   <span>➔</span>
                 </div>
@@ -545,13 +662,25 @@ export default function Home() {
         </section>
 
         {/* PARAMETER CONTROL BAR */}
-        <section className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <section
+          className={`border p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+            isDark
+              ? "bg-slate-900/80 border-slate-800"
+              : "bg-white border-slate-200 shadow-sm"
+          }`}
+        >
           <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <label className="text-xs text-slate-400 font-medium">City-Pair Route</label>
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              City-Pair Route
+            </label>
             <select
               value={selectedRoute}
               onChange={(e) => setSelectedRoute(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className={`text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                isDark
+                  ? "bg-slate-950 border border-slate-800 text-white"
+                  : "bg-slate-100 border border-slate-300 text-slate-900"
+              }`}
             >
               {AVAILABLE_ROUTES.map((r) => (
                 <option key={r.code} value={r.code}>
@@ -562,8 +691,16 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Advance Purchase Window</label>
-            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              Advance Purchase Window
+            </label>
+            <div
+              className={`flex items-center rounded-lg p-1 space-x-1 border ${
+                isDark
+                  ? "bg-slate-950 border-slate-800"
+                  : "bg-slate-100 border-slate-200"
+              }`}
+            >
               {LEAD_WINDOWS.map((lw) => (
                 <button
                   key={lw.value}
@@ -571,7 +708,9 @@ export default function Home() {
                   className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                     selectedLeadTime === lw.value
                       ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white"
+                      : isDark
+                      ? "text-slate-400 hover:text-white"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {lw.label}
@@ -581,14 +720,24 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Metric Display</label>
-            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              Metric Display
+            </label>
+            <div
+              className={`flex items-center rounded-lg p-1 space-x-1 border ${
+                isDark
+                  ? "bg-slate-950 border-slate-800"
+                  : "bg-slate-100 border-slate-200"
+              }`}
+            >
               <button
                 onClick={() => setMetricView("price")}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "price"
                     ? "bg-purple-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    : isDark
+                    ? "text-slate-400 hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Price (₹)
@@ -598,7 +747,9 @@ export default function Home() {
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                   metricView === "index"
                     ? "bg-purple-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    : isDark
+                    ? "text-slate-400 hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Jevons Index
@@ -607,16 +758,28 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400 font-medium">Timeframe</label>
-            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-1 space-x-1">
+            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              Timeframe
+            </label>
+            <div
+              className={`flex items-center rounded-lg p-1 space-x-1 border ${
+                isDark
+                  ? "bg-slate-950 border-slate-800"
+                  : "bg-slate-100 border-slate-200"
+              }`}
+            >
               {(["7d", "30d", "90d", "ALL"] as TimeFrame[]).map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                     timeframe === tf
-                      ? "bg-slate-800 text-white font-semibold"
-                      : "text-slate-400 hover:text-white"
+                      ? isDark
+                        ? "bg-slate-800 text-white font-semibold"
+                        : "bg-white text-slate-900 font-semibold shadow-sm"
+                      : isDark
+                      ? "text-slate-400 hover:text-white"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {tf}
@@ -627,10 +790,16 @@ export default function Home() {
         </section>
 
         {/* DYNAMIC EXPANDABLE SEARCH BOX - ALL ROUTES ENABLED */}
-        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl transition-all duration-500">
+        <section
+          className={`border rounded-2xl p-4 shadow-xl transition-all duration-500 ${
+            isDark
+              ? "bg-slate-900/80 border-slate-800"
+              : "bg-white border-slate-200 shadow-slate-200/50"
+          }`}
+        >
           <form onSubmit={handleRouteSearch} className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="relative flex-1 w-full">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+              <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 🔍
               </span>
               <input
@@ -638,7 +807,11 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search ANY route globally or domestically (e.g., 'Frankfurt from HYD', 'DEL to LHR', 'PNQ to BLR')..."
-                className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00BB77] focus:border-transparent transition-all placeholder:text-slate-500"
+                className={`w-full text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00BB77] focus:border-transparent transition-all ${
+                  isDark
+                    ? "bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500"
+                    : "bg-slate-50 border border-slate-300 text-slate-900 placeholder:text-slate-400"
+                }`}
               />
             </div>
             <button
@@ -661,18 +834,22 @@ export default function Home() {
           </form>
 
           {searchResults && (
-            <div className="mt-4 pt-4 border-t border-slate-800/80 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div
+              className={`mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-300 ${
+                isDark ? "border-slate-800/80" : "border-slate-200"
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#00BB77] animate-pulse" />
-                  <h4 className="text-sm font-bold text-white">
-                    Dynamic Search Results: <span className="text-purple-400">{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
+                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                    Dynamic Search Results: <span className="text-purple-500">{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
                   </h4>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSearchResults(null)}
-                  className="text-xs text-slate-500 hover:text-slate-300 font-mono"
+                  className={`text-xs font-mono ${isDark ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-700"}`}
                 >
                   ✕ Close
                 </button>
@@ -680,14 +857,23 @@ export default function Home() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {searchResults.options.map((opt: any, idx: number) => (
-                  <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex justify-between items-center hover:border-[#00BB77]/50 transition-all">
+                  <div
+                    key={idx}
+                    className={`border rounded-xl p-3 flex justify-between items-center hover:border-[#00BB77]/50 transition-all ${
+                      isDark
+                        ? "bg-slate-950 border-slate-800"
+                        : "bg-slate-50 border-slate-200"
+                    }`}
+                  >
                     <div>
-                      <p className="text-xs font-bold text-white">{opt.airline} <span className="text-[10px] text-slate-500 font-mono">({opt.code})</span></p>
-                      <p className="text-[10px] text-slate-400">{opt.type} • {opt.duration}</p>
+                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                        {opt.airline} <span className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>({opt.code})</span>
+                      </p>
+                      <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{opt.type} • {opt.duration}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-extrabold text-[#00BB77]">{opt.price}</p>
-                      <span className="text-[9px] text-purple-400 font-mono">Index: {searchResults.jevonsIndex}</span>
+                      <span className="text-[9px] text-purple-500 font-mono">Index: {searchResults.jevonsIndex}</span>
                     </div>
                   </div>
                 ))}
@@ -698,12 +884,20 @@ export default function Home() {
 
         {/* MAIN WORKSPACE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <main className="lg:col-span-3 border border-slate-800 rounded-2xl p-5 bg-slate-900/50 flex flex-col justify-between space-y-6">
+          <main
+            className={`lg:col-span-3 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
+              isDark
+                ? "bg-slate-900/50 border-slate-800"
+                : "bg-white border-slate-200 shadow-sm"
+            }`}
+          >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Past History & Index Analytics</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                    Past History & Index Analytics
+                  </h3>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Statistical geometric Jevons index trends over historical time-series horizons
                   </p>
                 </div>
@@ -711,27 +905,59 @@ export default function Home() {
 
               {/* Summary Metric Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-                  <p className="text-[10px] text-slate-400 font-medium">Est. Current Fare</p>
-                  <p className="text-xl font-bold text-blue-400 mt-0.5">
+                <div
+                  className={`border p-3 rounded-xl ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Est. Current Fare
+                  </p>
+                  <p className="text-xl font-bold text-blue-500 mt-0.5">
                     ₹{currentPrice.toLocaleString("en-IN")}
                   </p>
                 </div>
-                <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-                  <p className="text-[10px] text-slate-400 font-medium">Jevons Index</p>
-                  <p className="text-xl font-bold text-purple-400 mt-0.5">{currentIndex}</p>
+                <div
+                  className={`border p-3 rounded-xl ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Jevons Index
+                  </p>
+                  <p className="text-xl font-bold text-purple-500 mt-0.5">{currentIndex}</p>
                 </div>
-                <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-                  <p className="text-[10px] text-slate-400 font-medium">Min / Max Range</p>
-                  <p className="text-sm font-bold text-slate-200 mt-1">
+                <div
+                  className={`border p-3 rounded-xl ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Min / Max Range
+                  </p>
+                  <p className={`text-sm font-bold mt-1 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
                     ₹{minPrice.toLocaleString("en-IN")} - ₹{maxPrice.toLocaleString("en-IN")}
                   </p>
                 </div>
-                <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-                  <p className="text-[10px] text-slate-400 font-medium">Trend ({timeframe})</p>
+                <div
+                  className={`border p-3 rounded-xl ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Trend ({timeframe})
+                  </p>
                   <p
                     className={`text-xl font-bold mt-0.5 ${
-                      Number(periodChange) >= 0 ? "text-emerald-400" : "text-rose-400"
+                      Number(periodChange) >= 0 ? "text-emerald-500" : "text-rose-500"
                     }`}
                   >
                     {Number(periodChange) >= 0 ? `+${periodChange}%` : `${periodChange}%`}
@@ -740,39 +966,47 @@ export default function Home() {
               </div>
 
               {/* Chart Viewport */}
-              <div className="w-full h-[380px] bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex items-center justify-center">
+              <div
+                className={`w-full h-[380px] p-4 rounded-xl border flex items-center justify-center ${
+                  isDark
+                    ? "bg-slate-950/60 border-slate-800"
+                    : "bg-slate-50/80 border-slate-200"
+                }`}
+              >
                 {loading ? (
-                  <div className="text-blue-400 text-sm animate-pulse flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+                  <div className="text-blue-500 text-sm animate-pulse flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                     Loading trends for {selectedRoute} (T+{selectedLeadTime})...
                   </div>
                 ) : error ? (
                   <div className="text-center space-y-1">
-                    <p className="text-rose-400 text-sm font-medium">Error loading trends</p>
-                    <p className="text-xs text-slate-500 font-mono">{error}</p>
+                    <p className="text-rose-500 text-sm font-medium">Error loading trends</p>
+                    <p className={`text-xs font-mono ${isDark ? "text-slate-500" : "text-slate-400"}`}>{error}</p>
                   </div>
                 ) : filteredData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={filteredData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#e2e8f0"} opacity={0.6} />
                       <XAxis
                         dataKey="calculation_date"
-                        stroke="#64748b"
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        stroke={isDark ? "#64748b" : "#94a3b8"}
+                        tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 11 }}
                         tickLine={false}
                       />
                       <YAxis
-                        stroke="#64748b"
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        stroke={isDark ? "#64748b" : "#94a3b8"}
+                        tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 11 }}
                         domain={["auto", "auto"]}
                         tickLine={false}
                         tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#0f172a",
-                          borderColor: "#334155",
+                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                          borderColor: isDark ? "#334155" : "#cbd5e1",
+                          color: isDark ? "#ffffff" : "#0f172a",
                           borderRadius: "0.75rem",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                         }}
                         formatter={(val: any) => {
                           if (val === undefined || val === null) return ["N/A", metricView === "price" ? "Estimated Fare" : "Jevons Index"];
@@ -793,52 +1027,80 @@ export default function Home() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-slate-500 text-xs">No metric entries found for {selectedRoute}.</p>
+                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                    No metric entries found for {selectedRoute}.
+                  </p>
                 )}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div
+              className={`pt-4 border-t flex items-center justify-between text-xs ${
+                isDark ? "border-slate-800/80 text-slate-400" : "border-slate-200 text-slate-500"
+              }`}
+            >
               <span className="flex items-center gap-2">
                 <span className="animate-bounce">↓</span>
                 <span>Scroll down or trigger button on right panel to scrape more real-time carrier quotes</span>
               </span>
-              <span className="font-mono text-[10px] text-slate-500">Route: {selectedRoute}</span>
+              <span className={`font-mono text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Route: {selectedRoute}
+              </span>
             </div>
           </main>
 
           {/* RIGHT COLUMN: SIDEBAR */}
           <aside className="lg:col-span-1 flex flex-col gap-6">
-            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50">
-              <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
+            <div
+              className={`border rounded-2xl p-4 ${
+                isDark
+                  ? "bg-slate-900/50 border-slate-800"
+                  : "bg-white border-slate-200 shadow-sm"
+              }`}
+            >
+              <h4
+                className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
+                  isDark ? "text-slate-400 border-slate-800" : "text-slate-500 border-slate-200"
+                }`}
+              >
                 Status of DB & Route Data
               </h4>
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Database Engine</span>
-                  <span className="text-emerald-400 font-mono font-semibold">● Supabase Live</span>
+                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Database Engine</span>
+                  <span className="text-emerald-500 font-mono font-semibold">● Supabase Live</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Active Routes</span>
-                  <span className="text-slate-200 font-mono">6 City-Pairs</span>
+                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Active Routes</span>
+                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-slate-800"}`}>6 City-Pairs</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Lead Windows</span>
-                  <span className="text-slate-200 font-mono">T+1 to T+45</span>
+                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Lead Windows</span>
+                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-slate-800"}`}>T+1 to T+45</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Scrape Status</span>
-                  <span className="text-blue-400 font-mono">Playwright Ready</span>
+                  <span className={isDark ? "text-slate-400" : "text-slate-500"}>Scrape Status</span>
+                  <span className="text-blue-500 font-mono">Playwright Ready</span>
                 </div>
               </div>
             </div>
 
-            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-900/50 flex flex-col justify-between space-y-4">
+            <div
+              className={`border rounded-2xl p-4 flex flex-col justify-between space-y-4 ${
+                isDark
+                  ? "bg-slate-900/50 border-slate-800"
+                  : "bg-white border-slate-200 shadow-sm"
+              }`}
+            >
               <div>
-                <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 border-b border-slate-800 pb-2">
+                <h4
+                  className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
+                    isDark ? "text-slate-400 border-slate-800" : "text-slate-500 border-slate-200"
+                  }`}
+                >
                   System Scraping Trigger
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                <p className={`text-xs leading-relaxed mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                   Manually trigger backend Playwright headless workers to scrape current prices across routes.
                 </p>
               </div>
@@ -860,38 +1122,58 @@ export default function Home() {
         </div>
 
         {/* INFORMATION SECTION WITH JADE GREEN (#00BB77) THEME */}
-        <footer className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-900 text-slate-300">
-          <div 
-            className="border rounded-2xl p-6 bg-slate-900/40 space-y-3 transition-all duration-300 shadow-lg shadow-[#00BB77]/5"
+        <footer
+          className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${
+            isDark ? "border-slate-900 text-slate-300" : "border-slate-200 text-slate-700"
+          }`}
+        >
+          <div
+            className={`border rounded-2xl p-6 space-y-3 transition-all duration-300 shadow-lg shadow-[#00BB77]/5 ${
+              isDark ? "bg-slate-900/40" : "bg-white"
+            }`}
             style={{ borderColor: "#00BB77" }}
           >
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#00BB77" }} />
-              <h3 className="text-lg font-bold text-white">Purpose of NAPIER</h3>
+              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                Purpose of NAPIER
+              </h3>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs leading-relaxed">
               The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> was constructed to address volatile dynamic pricing algorithms across Indian domestic aviation sectors. By monitoring pricing behaviors across advance purchase windows (T+1 to T+45 days), NAPIER brings market transparency to travelers, enterprise procurement teams, and aviation analysts.
             </p>
-            <ul className="text-xs text-slate-300 space-y-2 list-disc list-inside pt-1">
+            <ul className="text-xs space-y-2 list-disc list-inside pt-1">
               <li><strong style={{ color: "#00BB77" }}>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
               <li><strong style={{ color: "#00BB77" }}>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
               <li><strong style={{ color: "#00BB77" }}>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
             </ul>
           </div>
 
-          <div className="border border-slate-800/80 rounded-2xl p-6 bg-slate-900/40 space-y-3">
+          <div
+            className={`border rounded-2xl p-6 space-y-3 ${
+              isDark
+                ? "bg-slate-900/40 border-slate-800/80"
+                : "bg-white border-slate-200 shadow-sm"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-purple-500" />
-              <h3 className="text-lg font-bold text-white">About Us</h3>
+              <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                About Us
+              </h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
               NAPIER is an open statistical initiative built by data engineers and aviation economists. We aim to offer an unbiased index metric for domestic air travel, acting as a standardized market barometer similar to traditional consumer price indexes.
             </p>
-            <div className="pt-2 text-xs text-slate-400 space-y-1">
-              <p><strong className="text-slate-300">Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
-              <p><strong className="text-slate-300">Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
+            <div className={`pt-2 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+              <p><strong className={isDark ? "text-slate-300" : "text-slate-800"}>Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
+              <p><strong className={isDark ? "text-slate-300" : "text-slate-800"}>Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
             </div>
-            <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800/60 flex justify-between items-center">
+            <div
+              className={`pt-2 text-[11px] border-t flex justify-between items-center ${
+                isDark ? "text-slate-500 border-slate-800/60" : "text-slate-400 border-slate-200"
+              }`}
+            >
               <span>© 2026 NAPIER Engine</span>
               <span>v1.0.4 Live Telemetry</span>
             </div>
