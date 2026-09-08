@@ -176,7 +176,7 @@ export default function Home() {
         } else {
           setError("Failed to connect to index service");
         }
-      } font-medium {
+      } finally {
         setLoading(false);
       }
     };
