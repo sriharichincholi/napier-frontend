@@ -22,6 +22,7 @@ interface RouteOption {
   label: string;
   origin: string;
   dest: string;
+  query: string;
 }
 
 interface LeadWindowOption {
@@ -43,12 +44,14 @@ interface ChatMessage {
 }
 
 const AVAILABLE_ROUTES: RouteOption[] = [
-  { code: "DEL-BOM", label: "Delhi → Mumbai", origin: "DEL", dest: "BOM" },
-  { code: "DEL-BLR", label: "Delhi → Bengaluru", origin: "DEL", dest: "BLR" },
-  { code: "BOM-BLR", label: "Mumbai → Bengaluru", origin: "BOM", dest: "BLR" },
-  { code: "DEL-CCU", label: "Delhi → Kolkata", origin: "DEL", dest: "CCU" },
-  { code: "BLR-HYD", label: "Bengaluru → Hyderabad", origin: "BLR", dest: "HYD" },
-  { code: "MAA-DEL", label: "Chennai → Delhi", origin: "MAA", dest: "DEL" },
+  { code: "DEL-BOM", label: "Delhi → Mumbai", origin: "DEL", dest: "BOM", query: "Delhi to Mumbai" },
+  { code: "FRA-HYD", label: "Frankfurt → Hyderabad", origin: "FRA", dest: "HYD", query: "Frankfurt to Hyderabad" },
+  { code: "DEL-BLR", label: "Delhi → Bengaluru", origin: "DEL", dest: "BLR", query: "Delhi to Bengaluru" },
+  { code: "BOM-BLR", label: "Mumbai → Bengaluru", origin: "BOM", dest: "BLR", query: "Mumbai to Bengaluru" },
+  { code: "DEL-CCU", label: "Delhi → Kolkata", origin: "DEL", dest: "CCU", query: "Delhi to Kolkata" },
+  { code: "BLR-HYD", label: "Bengaluru → Hyderabad", origin: "BLR", dest: "HYD", query: "Bengaluru to Hyderabad" },
+  { code: "MAA-DEL", label: "Chennai → Delhi", origin: "MAA", dest: "DEL", query: "Chennai to Delhi" },
+  { code: "LHR-BOM", label: "London → Mumbai", origin: "LHR", dest: "BOM", query: "London to Mumbai" },
 ];
 
 const LEAD_WINDOWS: LeadWindowOption[] = [
@@ -97,6 +100,7 @@ const SEARCH_AUTOPROMPTS = [
   "Bengaluru to Delhi (BLR-DEL)",
   "Mumbai to Bengaluru (BOM-BLR)",
   "Chennai to Delhi (MAA-DEL)",
+  "London to Mumbai (LHR-BOM)",
 ];
 
 export default function Home() {
@@ -115,8 +119,8 @@ export default function Home() {
   const [metricView, setMetricView] = useState<MetricView>("price");
   const [airlineSort, setAirlineSort] = useState<AirlineSortKey>("recommended");
 
-  // Dynamic Route Search States
-  const [searchQuery, setSearchQuery] = useState("");
+  // Dynamic Route Search & Direct Selection States
+  const [searchQuery, setSearchQuery] = useState("Delhi to Mumbai");
   const [showAutoPrompts, setShowAutoPrompts] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any | null>(null);
@@ -140,6 +144,15 @@ export default function Home() {
       AVAILABLE_ROUTES.find((r) => r.code === selectedRoute) || AVAILABLE_ROUTES[0]
     );
   }, [selectedRoute]);
+
+  // Synchronized Route Switcher Handler for dropdowns in both Realtime & Historic Panels
+  const handleRouteSelectCode = (routeCode: string) => {
+    const found = AVAILABLE_ROUTES.find((r) => r.code === routeCode);
+    if (found) {
+      setSelectedRoute(found.code);
+      setSearchQuery(found.query);
+    }
+  };
 
   const targetDateStr = useMemo(() => {
     const d = new Date();
@@ -262,91 +275,51 @@ export default function Home() {
     }
   }, [numChange, activeRouteObj]);
 
-  // Airline Cards with Sorting, Filtering, Ticket Availability, Mini Sparklines, and User Comments
+  // Airline Cards with Sorting, Filtering, and Ticket Availability
   const airlineCards = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
-    const p = currentPrice;
+    const hash = selectedRoute.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
     const baseList = [
       {
         name: "IndiGo",
         code: "6E",
-        price: Math.round(p * 0.96),
-        seatsLeft: 4,
+        price: Math.round(currentPrice * 0.96),
+        seatsLeft: Math.max(2, 4 + (hash % 3)),
         rating: 4.6,
-        userComment: "Great on-time performance & competitive prices.",
-        sparkline: [
-          { v: Math.round(p * 1.02) },
-          { v: Math.round(p * 1.00) },
-          { v: Math.round(p * 0.98) },
-          { v: Math.round(p * 0.97) },
-          { v: Math.round(p * 0.96) },
-        ],
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20IndiGo`,
       },
       {
         name: "Air India",
         code: "AI",
-        price: Math.round(p * 1.08),
-        seatsLeft: 9,
+        price: Math.round(currentPrice * 1.08),
+        seatsLeft: Math.max(2, 9 - (hash % 4)),
         rating: 4.2,
-        userComment: "Includes complimentary full-service meals.",
-        sparkline: [
-          { v: Math.round(p * 1.05) },
-          { v: Math.round(p * 1.06) },
-          { v: Math.round(p * 1.07) },
-          { v: Math.round(p * 1.09) },
-          { v: Math.round(p * 1.08) },
-        ],
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India`,
       },
       {
         name: "Air India Express",
         code: "IX",
-        price: Math.round(p * 0.92),
-        seatsLeft: 2,
+        price: Math.round(currentPrice * 0.92),
+        seatsLeft: Math.max(2, 2 + (hash % 2)),
         rating: 4.1,
-        userComment: "Lowest fare option available today.",
-        sparkline: [
-          { v: Math.round(p * 0.98) },
-          { v: Math.round(p * 0.95) },
-          { v: Math.round(p * 0.94) },
-          { v: Math.round(p * 0.93) },
-          { v: Math.round(p * 0.92) },
-        ],
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India%20Express`,
       },
       {
         name: "Akasa Air",
         code: "QP",
-        price: Math.round(p * 0.94),
-        seatsLeft: 6,
+        price: Math.round(currentPrice * 0.94),
+        seatsLeft: Math.max(2, 6 - (hash % 3)),
         rating: 4.5,
-        userComment: "Modern fleet and comfortable legroom.",
-        sparkline: [
-          { v: Math.round(p * 0.97) },
-          { v: Math.round(p * 0.96) },
-          { v: Math.round(p * 0.95) },
-          { v: Math.round(p * 0.94) },
-          { v: Math.round(p * 0.94) },
-        ],
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Akasa%20Air`,
       },
       {
         name: "SpiceJet",
         code: "SG",
-        price: Math.round(p * 0.98),
-        seatsLeft: 12,
+        price: Math.round(currentPrice * 0.98),
+        seatsLeft: Math.max(2, 12 - (hash % 5)),
         rating: 3.8,
-        userComment: "Decent budget choice, monitor delays.",
-        sparkline: [
-          { v: Math.round(p * 1.01) },
-          { v: Math.round(p * 0.99) },
-          { v: Math.round(p * 1.00) },
-          { v: Math.round(p * 0.97) },
-          { v: Math.round(p * 0.98) },
-        ],
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20SpiceJet`,
       },
     ];
@@ -357,7 +330,7 @@ export default function Home() {
       if (airlineSort === "name") return a.name.localeCompare(b.name);
       return 0; // recommended
     });
-  }, [currentPrice, activeRouteObj, targetDateStr, airlineSort]);
+  }, [currentPrice, activeRouteObj, targetDateStr, airlineSort, selectedRoute]);
 
   const handleRouteSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -729,7 +702,7 @@ export default function Home() {
         {/* ======================================================== */}
         {activeTab === "live" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* DYNAMIC SEARCH BAR WITH AUTOPROMPTS */}
+            {/* DYNAMIC SEARCH BAR WITH AUTOPROMPTS & INTEGRATED ROUTE DROPDOWN */}
             <section
               className={`border rounded-2xl p-4 shadow-xl relative transition-all duration-500 ${
                 isDark
@@ -787,6 +760,23 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+
+                {/* SYNCHRONIZED ROUTE SELECT DROPDOWN FOR REALTIME PANEL */}
+                <select
+                  value={selectedRoute}
+                  onChange={(e) => handleRouteSelectCode(e.target.value)}
+                  className={`w-full sm:w-auto text-xs font-semibold rounded-xl px-4 py-3 border focus:ring-2 focus:outline-none cursor-pointer transition-all ${
+                    isDark
+                      ? "bg-slate-950 border-slate-800 text-white focus:ring-[#00BB77]"
+                      : "bg-white border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
+                  }`}
+                >
+                  {AVAILABLE_ROUTES.map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.label} ({r.code})
+                    </option>
+                  ))}
+                </select>
 
                 <button
                   type="submit"
@@ -951,29 +941,9 @@ export default function Home() {
                         <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Rating: ★ {carrier.rating}</span>
                         <span className="text-emerald-500 font-mono font-bold">● {carrier.seatsLeft} Seats Left</span>
                       </div>
-
-                      {/* MINI GRAPH INTEGRATION */}
-                      <div className="mt-2.5 h-9 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={carrier.sparkline}>
-                            <Line
-                              type="monotone"
-                              dataKey="v"
-                              stroke={isDark ? "#00BB77" : "#3B7A57"}
-                              strokeWidth={1.5}
-                              dot={false}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* USER COMMENT BADGE */}
-                      <div className={`mt-2 p-1.5 rounded text-[9px] italic ${isDark ? "bg-slate-900 text-slate-400 border border-slate-800" : "bg-[#E8F0EC] text-[#4A6356] border border-[#C2DFD0]"}`}>
-                        💬 "{carrier.userComment}"
-                      </div>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-dashed border-slate-700/40">
+                    <div className="mt-4 pt-3 border-t border-dashed border-slate-700/40">
                       <p className={`text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
                         Live Mapped Fare
                       </p>
@@ -1157,7 +1127,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <select
                     value={selectedRoute}
-                    onChange={(e) => setSelectedRoute(e.target.value)}
+                    onChange={(e) => handleRouteSelectCode(e.target.value)}
                     className={`text-xs rounded-lg px-3 py-2 focus:ring-2 focus:outline-none ${
                       isDark
                         ? "bg-slate-950 border border-slate-800 text-white focus:ring-purple-500"
