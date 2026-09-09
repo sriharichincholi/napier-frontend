@@ -145,7 +145,7 @@ export default function Home() {
     );
   }, [selectedRoute]);
 
-  // Synchronized Route Switcher Handler for dropdowns in both Realtime & Historic Panels
+  // Synchronized Route Switcher Handler
   const handleRouteSelectCode = (routeCode: string) => {
     const found = AVAILABLE_ROUTES.find((r) => r.code === routeCode);
     if (found) {
@@ -246,7 +246,6 @@ export default function Home() {
 
   const numChange = Number(periodChange);
 
-  // Customer-oriented graph comment & suggestion generator
   const graphInsight = useMemo(() => {
     if (numChange < -2.0) {
       return {
@@ -275,7 +274,6 @@ export default function Home() {
     }
   }, [numChange, activeRouteObj]);
 
-  // Airline Cards with Sorting, Filtering, and Ticket Availability
   const airlineCards = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
@@ -328,7 +326,7 @@ export default function Home() {
       if (airlineSort === "price-asc") return a.price - b.price;
       if (airlineSort === "price-desc") return b.price - a.price;
       if (airlineSort === "name") return a.name.localeCompare(b.name);
-      return 0; // recommended
+      return 0;
     });
   }, [currentPrice, activeRouteObj, targetDateStr, airlineSort, selectedRoute]);
 
@@ -551,7 +549,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* MAIN PANEL NAVIGATION (LIVE ANALYTICS vs HISTORIC ANALYTICS) */}
+      {/* MAIN PANEL NAVIGATION */}
       <nav
         className={`px-6 py-3 border-b flex items-center justify-center gap-3 sticky top-[81px] z-30 backdrop-blur transition-colors ${
           isDark
@@ -697,6 +695,45 @@ export default function Home() {
       </aside>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
+        {/* STANDALONE ROUTE SELECTION CONTROL BAR */}
+        <div
+          className={`border rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 transition-all ${
+            isDark
+              ? "bg-slate-900/90 border-slate-800"
+              : "bg-[#E8F0EC] border-[#C2DFD0]"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl">✈️</span>
+            <div>
+              <h3 className={`text-sm font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                Select Flight Sector / Route
+              </h3>
+              <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                Choose a route to instantly switch telemetry feeds across both panels
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <select
+              value={selectedRoute}
+              onChange={(e) => handleRouteSelectCode(e.target.value)}
+              className={`w-full sm:w-64 text-sm font-semibold rounded-xl px-4 py-2.5 border focus:ring-2 focus:outline-none cursor-pointer transition-all ${
+                isDark
+                  ? "bg-slate-950 border-slate-800 text-white focus:ring-[#00BB77]"
+                  : "bg-white border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
+              }`}
+            >
+              {AVAILABLE_ROUTES.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.label} ({r.code})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* ======================================================== */}
         {/* PANEL 1: LIVE ANALYTICS & MAPPING PANEL                   */}
         {/* ======================================================== */}
@@ -761,7 +798,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* SYNCHRONIZED ROUTE SELECT DROPDOWN FOR REALTIME PANEL */}
+                {/* ROUTE SELECT DROPDOWN FOR REALTIME PANEL */}
                 <select
                   value={selectedRoute}
                   onChange={(e) => handleRouteSelectCode(e.target.value)}
@@ -853,7 +890,7 @@ export default function Home() {
               )}
             </section>
 
-            {/* LIVE PRICE MAPPING PANEL & AIRLINE LISTING WITH SORT/FILTER & AVAILABILITY */}
+            {/* LIVE PRICE MAPPING PANEL & AIRLINE LISTING */}
             <section
               className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
                 isDark
@@ -880,7 +917,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* SORT & FILTER CONTROLS */}
                 <div className="flex items-center gap-2">
                   <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
                     Sort By:
@@ -967,7 +1003,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* LIVE GRAPH & CUSTOMER-ORIENTED COMMENTS & SUGGESTIONS */}
+            {/* LIVE GRAPH & COMMENTS */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <main
                 className={`lg:col-span-2 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
@@ -1011,7 +1047,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* SUMMARY CARDS */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     <div className={`border p-3 rounded-xl ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
                       <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Current Fare</p>
@@ -1033,7 +1068,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* CHART */}
                   <div className={`w-full h-[320px] p-4 rounded-xl border flex items-center justify-center ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
                     {loading ? (
                       <div className={`text-sm animate-pulse flex items-center gap-2 ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
@@ -1073,7 +1107,6 @@ export default function Home() {
                 </div>
               </main>
 
-              {/* CUSTOMER-ORIENTED GRAPH COMMENTS & SUGGESTIONS PANEL */}
               <aside className={`border rounded-2xl p-5 flex flex-col justify-between space-y-4 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"}`}>
                 <div>
                   <div className="flex items-center justify-between border-b pb-3 mb-4">
@@ -1154,7 +1187,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ARCHIVAL SUMMARY METRICS */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className={`border p-4 rounded-xl ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
                   <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Total Archival Data Points</p>
@@ -1174,7 +1206,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* HISTORIC JEVONS INDEX & PRICE GRAPH */}
               <div className={`w-full h-[400px] p-4 rounded-xl border flex items-center justify-center ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
                 {loading ? (
                   <div className={`text-sm animate-pulse ${isDark ? "text-purple-400" : "text-[#3B7A57]"}`}>
