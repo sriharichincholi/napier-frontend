@@ -14,6 +14,8 @@ import {
 type TimeFrame = "7d" | "30d" | "90d" | "ALL";
 type MetricView = "price" | "index";
 type ThemeMode = "dark" | "light";
+type MainTab = "live" | "historic";
+type AirlineSortKey = "recommended" | "price-asc" | "price-desc" | "name";
 
 interface RouteOption {
   code: string;
@@ -87,31 +89,35 @@ const AIRPORT_DATABASE: Record<string, { code: string; city: string; country: st
   dubai: { code: "DXB", city: "Dubai", country: "UAE" },
   sin: { code: "SIN", city: "Singapore", country: "Singapore" },
   singapore: { code: "SIN", city: "Singapore", country: "Singapore" },
-  cdg: { code: "CDG", city: "Paris Charles de Gaulle", country: "France" },
-  paris: { code: "CDG", city: "Paris", country: "France" },
-  hkg: { code: "HKG", city: "Hong Kong", country: "Hong Kong" },
-  tyo: { code: "HND", city: "Tokyo", country: "Japan" },
-  tokyo: { code: "HND", city: "Tokyo", country: "Japan" },
-  sfo: { code: "SFO", city: "San Francisco", country: "USA" },
-  syd: { code: "SYD", city: "Sydney", country: "Australia" },
 };
+
+const SEARCH_AUTOPROMPTS = [
+  "Delhi to Mumbai (DEL-BOM)",
+  "Frankfurt to Hyderabad (FRA-HYD)",
+  "Bengaluru to Delhi (BLR-DEL)",
+  "Mumbai to Bengaluru (BOM-BLR)",
+  "Chennai to Delhi (MAA-DEL)",
+];
 
 export default function Home() {
   const [data, setData] = useState<IndexTrendItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Theme State (Dark / Bright Mint-Sage)
+  // Theme & Panel Navigation States
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [activeTab, setActiveTab] = useState<MainTab>("live");
 
   // Filter States
   const [selectedRoute, setSelectedRoute] = useState<string>("DEL-BOM");
   const [selectedLeadTime, setSelectedLeadTime] = useState<number>(15);
   const [timeframe, setTimeframe] = useState<TimeFrame>("30d");
   const [metricView, setMetricView] = useState<MetricView>("price");
+  const [airlineSort, setAirlineSort] = useState<AirlineSortKey>("recommended");
 
   // Dynamic Route Search States
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAutoPrompts, setShowAutoPrompts] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any | null>(null);
 
@@ -120,7 +126,7 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       sender: "ai",
-      text: "Hello! I am your NAPIER AI assistant. Ask me about airfare trends, price predictions, or optimal booking windows.",
+      text: "Hello! I am your NAPIER AI assistant. Ask me about real-time price mapping, ticket availability, or historic index trends.",
     },
   ]);
   const [chatInput, setChatInput] = useState<string>("");
@@ -225,42 +231,91 @@ export default function Home() {
       ).toFixed(1)
     : "0.0";
 
+  const numChange = Number(periodChange);
+
+  // Customer-oriented graph comment & suggestion generator
+  const graphInsight = useMemo(() => {
+    if (numChange < -2.0) {
+      return {
+        badge: "Great Time to Book!",
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10 border-emerald-500/30",
+        comment: `Prices for ${activeRouteObj.label} have dropped by ${Math.abs(numChange)}% over this timeframe. Historical patterns indicate fares are near a local minimum.`,
+        suggestion: "Recommendation: Secure your booking now before airline yield management algorithms trigger price surges.",
+      };
+    } else if (numChange > 2.0) {
+      return {
+        badge: "High Price Volatility",
+        color: "text-rose-500",
+        bg: "bg-rose-500/10 border-rose-500/30",
+        comment: `Prices have surged by +${numChange}% recently. Demand on this sector is currently outpacing available seat capacity.`,
+        suggestion: "Recommendation: If flexible, consider shifting your travel dates by +/- 2 days or check alternate advance windows (T+30).",
+      };
+    } else {
+      return {
+        badge: "Stable Market Trend",
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/30",
+        comment: `Market pricing remains stable with negligible movement (${numChange}%) across the selected observation window.`,
+        suggestion: "Recommendation: Standard booking conditions apply. Monitor for flash sales or wait for T+15 window confirmation.",
+      };
+    }
+  }, [numChange, activeRouteObj]);
+
+  // Airline Cards with Sorting, Filtering, and Ticket Availability
   const airlineCards = useMemo(() => {
     const o = activeRouteObj.origin;
     const d = activeRouteObj.dest;
-    return [
+    const baseList = [
       {
         name: "IndiGo",
         code: "6E",
         price: Math.round(currentPrice * 0.96),
+        seatsLeft: 4,
+        rating: 4.6,
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20IndiGo`,
       },
       {
         name: "Air India",
         code: "AI",
         price: Math.round(currentPrice * 1.08),
+        seatsLeft: 9,
+        rating: 4.2,
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India`,
       },
       {
         name: "Air India Express",
         code: "IX",
         price: Math.round(currentPrice * 0.92),
+        seatsLeft: 2,
+        rating: 4.1,
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Air%20India%20Express`,
       },
       {
         name: "Akasa Air",
         code: "QP",
         price: Math.round(currentPrice * 0.94),
+        seatsLeft: 6,
+        rating: 4.5,
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20Akasa%20Air`,
       },
       {
         name: "SpiceJet",
         code: "SG",
         price: Math.round(currentPrice * 0.98),
+        seatsLeft: 12,
+        rating: 3.8,
         url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDateStr}%20on%20SpiceJet`,
       },
     ];
-  }, [currentPrice, activeRouteObj, targetDateStr]);
+
+    return [...baseList].sort((a, b) => {
+      if (airlineSort === "price-asc") return a.price - b.price;
+      if (airlineSort === "price-desc") return b.price - a.price;
+      if (airlineSort === "name") return a.name.localeCompare(b.name);
+      return 0; // recommended
+    });
+  }, [currentPrice, activeRouteObj, targetDateStr, airlineSort]);
 
   const handleRouteSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,6 +372,7 @@ export default function Home() {
             airline: isIntl ? "Lufthansa" : "IndiGo",
             code: isIntl ? "LH" : "6E",
             price: `₹${Math.round(basePrice * 1.05).toLocaleString("en-IN")}`,
+            seatsLeft: 3,
             duration: isIntl ? "8h 45m" : "2h 15m",
             type: isIntl ? "Non-stop" : "Direct",
           },
@@ -324,6 +380,7 @@ export default function Home() {
             airline: "Air India",
             code: "AI",
             price: `₹${Math.round(basePrice * 0.94).toLocaleString("en-IN")}`,
+            seatsLeft: 8,
             duration: isIntl ? "11h 20m" : "2h 30m",
             type: isIntl ? "1-Stop (DEL)" : "Direct",
           },
@@ -331,6 +388,7 @@ export default function Home() {
             airline: isIntl ? "Emirates" : "Akasa Air",
             code: isIntl ? "EK" : "QP",
             price: `₹${Math.round(basePrice * 1.12).toLocaleString("en-IN")}`,
+            seatsLeft: 5,
             duration: isIntl ? "10h 15m" : "2h 20m",
             type: isIntl ? "1-Stop (DXB)" : "Direct",
           },
@@ -339,6 +397,7 @@ export default function Home() {
 
       setSearchResults(mockResult);
       setIsSearching(false);
+      setShowAutoPrompts(false);
     }, 700);
   };
 
@@ -354,19 +413,17 @@ export default function Home() {
       const textLower = userText.toLowerCase().trim();
       let aiReply = "";
 
-      if (/^(hi|hello|hey|greetings|hola|good\s?(morning|afternoon|evening))/i.test(textLower)) {
-        aiReply = `Hello! How can I assist you with ${activeRouteObj.label} (${selectedRoute}) airfare data, price predictions, or Jevons index trends today?`;
+      if (/^(hi|hello|hey|greetings)/i.test(textLower)) {
+        aiReply = `Hello! How can I assist you with ${activeRouteObj.label} (${selectedRoute}) real-time mapping, ticket availability, or historic index trends today?`;
       } else if (textLower.includes("cheapest") || textLower.includes("best price") || textLower.includes("lowest")) {
         const lowestFare = Math.round(currentPrice * 0.92);
-        aiReply = `Air India Express and IndiGo currently offer the most competitive real-time rates for ${selectedRoute} (T+${selectedLeadTime}) starting at ~₹${lowestFare.toLocaleString("en-IN")}.`;
+        aiReply = `Air India Express and IndiGo currently offer the most competitive live rates for ${selectedRoute} (T+${selectedLeadTime}) starting at ~₹${lowestFare.toLocaleString("en-IN")}.`;
       } else if (textLower.includes("trend") || textLower.includes("predict") || textLower.includes("forecast") || textLower.includes("price")) {
-        aiReply = `Over the selected ${timeframe} timeframe, ${selectedRoute} displays a ${periodChange}% price movement. Current estimated average fare is ₹${currentPrice.toLocaleString("en-IN")}. Booking at T+15 or higher minimizes volatility.`;
-      } else if (textLower.includes("jevons") || textLower.includes("index") || textLower.includes("formula")) {
-        aiReply = `The current Jevons Index for ${selectedRoute} is ${currentIndex}. It calculates the unweighted geometric mean of prices across airlines to filter out outlier pricing spikes.`;
-      } else if (textLower.includes("book") || textLower.includes("buy ticket") || textLower.includes("seat")) {
-        aiReply = `I apologize, but I cannot directly book tickets or select seats. You can click any carrier card in the live matrix above to verify and purchase tickets directly through Google Travel or official airline sites.`;
+        aiReply = `Over the selected ${timeframe} timeframe, ${selectedRoute} displays a ${periodChange}% price movement. Current estimated average fare is ₹${currentPrice.toLocaleString("en-IN")}. ${graphInsight.suggestion}`;
+      } else if (textLower.includes("jevons") || textLower.includes("index") || textLower.includes("historic")) {
+        aiReply = `Switch over to the 'Historic Analytics' panel to inspect deep-dive database records and long-term Jevons Index trendlines for ${selectedRoute}.`;
       } else {
-        aiReply = `I apologize, but I am currently specialized in analyzing airfare trends, Jevons index metrics, and optimal booking windows for domestic routes. I couldn't fulfill that specific query. Feel free to ask me about cheapest fares, price movements, or route predictions for ${selectedRoute}!`;
+        aiReply = `I am monitoring ${activeRouteObj.label} live telemetry and database historical analytics. Feel free to ask about ticket availability, carrier sorting, or price forecasts!`;
       }
 
       setChatMessages((prev) => [...prev, { sender: "ai", text: aiReply }]);
@@ -374,7 +431,6 @@ export default function Home() {
   };
 
   const isDark = theme === "dark";
-  const numChange = Number(periodChange);
 
   return (
     <div
@@ -480,6 +536,45 @@ export default function Home() {
         </div>
       </header>
 
+      {/* MAIN PANEL NAVIGATION (LIVE ANALYTICS vs HISTORIC ANALYTICS) */}
+      <nav
+        className={`px-6 py-3 border-b flex items-center justify-center gap-3 sticky top-[81px] z-30 backdrop-blur transition-colors ${
+          isDark
+            ? "bg-slate-950/90 border-slate-900"
+            : "bg-[#F4F8F5]/90 border-[#D8E6DF]"
+        }`}
+      >
+        <button
+          onClick={() => setActiveTab("live")}
+          className={`px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === "live"
+              ? isDark
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "bg-[#3B7A57] text-white shadow-lg shadow-[#3B7A57]/30"
+              : isDark
+              ? "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+              : "bg-[#E8F0EC] text-[#4A6356] hover:text-[#1C2E24] border border-[#C2DFD0]"
+          }`}
+        >
+          <span>📊 Live Analytics & Mapping Panel</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("historic")}
+          className={`px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === "historic"
+              ? isDark
+                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
+                : "bg-[#2D5E43] text-white shadow-lg shadow-[#2D5E43]/30"
+              : isDark
+              ? "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+              : "bg-[#E8F0EC] text-[#4A6356] hover:text-[#1C2E24] border border-[#C2DFD0]"
+          }`}
+        >
+          <span>📈 Historic Trends & Database Analytics</span>
+        </button>
+      </nav>
+
       {/* FLOATING ACTION TRIGGER BUTTON */}
       <button
         onClick={() => setIsAiSidebarOpen((prev) => !prev)}
@@ -563,7 +658,7 @@ export default function Home() {
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
               type="text"
-              placeholder="Ask about trends, predictions..."
+              placeholder="Ask about live mapping, ticket availability..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               className={`flex-1 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 ${
@@ -587,589 +682,496 @@ export default function Home() {
       </aside>
 
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
-        {/* CARRIER MATRIX */}
-        <section
-          className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
-            isDark
-              ? "bg-slate-900/60 border-slate-800"
-              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
-          }`}
-        >
-          <div
-            className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b pb-3 ${
-              isDark ? "border-slate-800/80" : "border-[#D8E6DF]"
-            }`}
-          >
-            <div>
-              <h2
-                className={`text-lg font-bold flex items-center gap-2 ${
-                  isDark ? "text-white" : "text-[#1C2E24]"
-                }`}
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                Real-Time Live Airline Fares
-              </h2>
-              <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                Click any carrier card to verify live fares directly on official booking search cards for {activeRouteObj.label} ({targetDateStr})
-              </p>
-            </div>
-            <span
-              className={`text-xs font-mono px-3 py-1 rounded-full border ${
+        {/* ======================================================== */}
+        {/* PANEL 1: LIVE ANALYTICS & MAPPING PANEL                   */}
+        {/* ======================================================== */}
+        {activeTab === "live" && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* DYNAMIC SEARCH BAR WITH AUTOPROMPTS */}
+            <section
+              className={`border rounded-2xl p-4 shadow-xl relative transition-all duration-500 ${
                 isDark
-                  ? "bg-slate-950 text-emerald-400 border-emerald-500/30"
-                  : "bg-[#F4F8F5] text-[#2D5E43] border-[#C2DFD0]"
+                  ? "bg-slate-900/80 border-slate-800"
+                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
               }`}
             >
-              ● Live Scrape Stream Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {airlineCards.map((carrier) => (
-              <a
-                key={carrier.name}
-                href={carrier.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`group relative border rounded-xl p-3 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                  isDark
-                    ? "bg-slate-950 border-slate-800 hover:border-blue-500/50 hover:shadow-blue-500/10"
-                    : "bg-[#F4F8F5] border-[#C2DFD0] hover:border-[#3B7A57] hover:bg-white hover:shadow-[#1C2E24]/10"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-bold ${
-                      isDark
-                        ? "text-slate-300 group-hover:text-blue-400"
-                        : "text-[#1C2E24] group-hover:text-[#3B7A57]"
-                    }`}
-                  >
-                    {carrier.name}
+              <form onSubmit={handleRouteSearch} className="flex flex-col sm:flex-row gap-3 items-center relative">
+                <div className="relative flex-1 w-full">
+                  <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                    🔍
                   </span>
-                  <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowAutoPrompts(true);
+                    }}
+                    onFocus={() => setShowAutoPrompts(true)}
+                    placeholder="Search route with text autoprompt convenience (e.g., 'Delhi to Mumbai')..."
+                    className={`w-full text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 transition-all ${
                       isDark
-                        ? "bg-slate-800 text-slate-400"
-                        : "bg-[#E8F0EC] text-[#4A6356]"
+                        ? "bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:ring-[#00BB77]"
+                        : "bg-[#F4F8F5] border border-[#C2DFD0] text-[#1C2E24] placeholder:text-[#4A6356]/70 focus:ring-[#3B7A57]"
                     }`}
-                  >
-                    {carrier.code}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
-                    Live Scraped Fare
-                  </p>
-                  <p
-                    className={`text-lg font-extrabold ${
-                      isDark
-                        ? "text-white group-hover:text-emerald-400"
-                        : "text-[#1C2E24] group-hover:text-[#2D5E43]"
-                    } transition-colors`}
-                  >
-                    ₹{carrier.price.toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <div className={`mt-2 text-[10px] flex items-center gap-1 group-hover:underline ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
-                  <span>Verify Fare</span>
-                  <span>➔</span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
+                  />
 
-        {/* PARAMETERS BAR */}
-        <section
-          className={`border p-4 rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
-            isDark
-              ? "bg-slate-900/80 border-slate-800"
-              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
-          }`}
-        >
-          <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              City-Pair Route
-            </label>
-            <select
-              value={selectedRoute}
-              onChange={(e) => setSelectedRoute(e.target.value)}
-              className={`text-sm rounded-lg px-3 py-2 focus:ring-2 focus:outline-none ${
-                isDark
-                  ? "bg-slate-950 border border-slate-800 text-white focus:ring-purple-500"
-                  : "bg-[#F4F8F5] border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
-              }`}
-            >
-              {AVAILABLE_ROUTES.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.label} ({r.code})
-                </option>
-              ))}
-            </select>
-          </div>
+                  {/* AUTOPROMPT DROPDOWN */}
+                  {showAutoPrompts && (
+                    <div
+                      className={`absolute left-0 right-0 top-full mt-2 rounded-xl border shadow-2xl z-20 overflow-hidden ${
+                        isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white border-[#C2DFD0] text-[#1C2E24]"
+                      }`}
+                    >
+                      <div className={`px-3 py-2 text-[10px] font-mono uppercase tracking-wider border-b ${isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-[#E8F0EC] border-[#C2DFD0] text-[#4A6356]"}`}>
+                        Quick Convenience Suggestions
+                      </div>
+                      {SEARCH_AUTOPROMPTS.map((prompt, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(prompt);
+                            setShowAutoPrompts(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between ${
+                            isDark ? "hover:bg-slate-900" : "hover:bg-[#E8F0EC]"
+                          }`}
+                        >
+                          <span>{prompt}</span>
+                          <span className="text-[10px] font-mono opacity-60">Auto-fill</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-          <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              Advance Purchase Window
-            </label>
-            <div
-              className={`flex items-center rounded-lg p-1 space-x-1 border ${
-                isDark
-                  ? "bg-slate-950 border-slate-800"
-                  : "bg-[#F4F8F5] border-[#C2DFD0]"
-              }`}
-            >
-              {LEAD_WINDOWS.map((lw) => (
                 <button
-                  key={lw.value}
-                  onClick={() => setSelectedLeadTime(lw.value)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                    selectedLeadTime === lw.value
-                      ? isDark
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-[#3B7A57] text-white shadow-sm"
-                      : isDark
-                      ? "text-slate-400 hover:text-white"
-                      : "text-[#4A6356] hover:text-[#1C2E24]"
+                  type="submit"
+                  disabled={isSearching}
+                  className={`w-full sm:w-auto font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg text-white ${
+                    isDark
+                      ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:opacity-90 shadow-purple-500/20"
+                      : "bg-gradient-to-r from-[#2D5E43] via-[#3B7A57] to-[#00BB77] hover:bg-[#1C2E24] shadow-[#3B7A57]/20"
                   }`}
                 >
-                  {lw.label}
+                  {isSearching ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Mapping...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Live Map Query</span>
+                      <span>➔</span>
+                    </>
+                  )}
                 </button>
-              ))}
-            </div>
-          </div>
+              </form>
 
-          <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              Metric Display
-            </label>
-            <div
-              className={`flex items-center rounded-lg p-1 space-x-1 border ${
-                isDark
-                  ? "bg-slate-950 border-slate-800"
-                  : "bg-[#F4F8F5] border-[#C2DFD0]"
-              }`}
-            >
-              <button
-                onClick={() => setMetricView("price")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  metricView === "price"
-                    ? isDark
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-[#3B7A57] text-white shadow-sm"
-                    : isDark
-                    ? "text-slate-400 hover:text-white"
-                    : "text-[#4A6356] hover:text-[#1C2E24]"
-                }`}
-              >
-                Price (₹)
-              </button>
-              <button
-                onClick={() => setMetricView("index")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  metricView === "index"
-                    ? isDark
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-[#3B7A57] text-white shadow-sm"
-                    : isDark
-                    ? "text-slate-400 hover:text-white"
-                    : "text-[#4A6356] hover:text-[#1C2E24]"
-                }`}
-              >
-                Jevons Index
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              Timeframe
-            </label>
-            <div
-              className={`flex items-center rounded-lg p-1 space-x-1 border ${
-                isDark
-                  ? "bg-slate-950 border-slate-800"
-                  : "bg-[#F4F8F5] border-[#C2DFD0]"
-              }`}
-            >
-              {(["7d", "30d", "90d", "ALL"] as TimeFrame[]).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setTimeframe(tf)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                    timeframe === tf
-                      ? isDark
-                        ? "bg-slate-800 text-white font-semibold"
-                        : "bg-white text-[#1C2E24] font-bold shadow-sm"
-                      : isDark
-                      ? "text-slate-400 hover:text-white"
-                      : "text-[#4A6356] hover:text-[#1C2E24]"
+              {searchResults && (
+                <div
+                  className={`mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-300 ${
+                    isDark ? "border-slate-800/80" : "border-[#C2DFD0]"
                   }`}
                 >
-                  {tf}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#00BB77] animate-pulse" />
+                      <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                        Live Price Mapping Feed: <span className={isDark ? "text-purple-500" : "text-[#3B7A57]"}>{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSearchResults(null)}
+                      className={`text-xs font-mono ${isDark ? "text-slate-500 hover:text-slate-300" : "text-[#4A6356] hover:text-[#1C2E24]"}`}
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
 
-        {/* SEARCH BOX */}
-        <section
-          className={`border rounded-2xl p-4 shadow-xl transition-all duration-500 ${
-            isDark
-              ? "bg-slate-900/80 border-slate-800"
-              : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
-          }`}
-        >
-          <form onSubmit={handleRouteSearch} className="flex flex-col sm:flex-row gap-3 items-center">
-            <div className="relative flex-1 w-full">
-              <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                🔍
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search ANY route globally or domestically (e.g., 'Frankfurt from HYD', 'DEL to LHR', 'PNQ to BLR')..."
-                className={`w-full text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 transition-all ${
-                  isDark
-                    ? "bg-slate-950 border border-slate-800 text-white placeholder:text-slate-500 focus:ring-[#00BB77]"
-                    : "bg-[#F4F8F5] border border-[#C2DFD0] text-[#1C2E24] placeholder:text-[#4A6356]/70 focus:ring-[#3B7A57]"
-                }`}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isSearching}
-              className={`w-full sm:w-auto font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg text-white ${
-                isDark
-                  ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-[#00BB77] hover:opacity-90 shadow-purple-500/20"
-                  : "bg-gradient-to-r from-[#2D5E43] via-[#3B7A57] to-[#00BB77] hover:bg-[#1C2E24] shadow-[#3B7A57]/20"
-              }`}
-            >
-              {isSearching ? (
-                <>
-                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Searching...</span>
-                </>
-              ) : (
-                <>
-                  <span>Search Route</span>
-                  <span>➔</span>
-                </>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {searchResults.options.map((opt: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`border rounded-xl p-3 flex justify-between items-center ${
+                          isDark
+                            ? "bg-slate-950 border-slate-800"
+                            : "bg-[#F4F8F5] border-[#C2DFD0]"
+                        }`}
+                      >
+                        <div>
+                          <p className={`text-xs font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                            {opt.airline} <span className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>({opt.code})</span>
+                          </p>
+                          <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>{opt.type} • {opt.duration}</p>
+                          <span className="text-[10px] font-mono text-emerald-500 font-semibold mt-1 inline-block">
+                            ● {opt.seatsLeft} Seats Available
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-extrabold ${isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}`}>{opt.price}</p>
+                          <span className={`text-[9px] font-mono ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>Index: {searchResults.jevonsIndex}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
-          </form>
+            </section>
 
-          {searchResults && (
-            <div
-              className={`mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-300 ${
-                isDark ? "border-slate-800/80" : "border-[#C2DFD0]"
+            {/* LIVE PRICE MAPPING PANEL & AIRLINE LISTING WITH SORT/FILTER & AVAILABILITY */}
+            <section
+              className={`border rounded-2xl p-5 shadow-2xl transition-colors ${
+                isDark
+                  ? "bg-slate-900/60 border-slate-800"
+                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-[#1C2E24]/5"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#00BB77] animate-pulse" />
-                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
-                    Dynamic Search Results: <span className={isDark ? "text-purple-500" : "text-[#3B7A57]"}>{searchResults.origin}</span> ➔ <span className="text-[#00BB77]">{searchResults.destination}</span>
-                  </h4>
+              <div
+                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 border-b pb-4 ${
+                  isDark ? "border-slate-800/80" : "border-[#D8E6DF]"
+                }`}
+              >
+                <div>
+                  <h2
+                    className={`text-lg font-bold flex items-center gap-2 ${
+                      isDark ? "text-white" : "text-[#1C2E24]"
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    Live Price Mapping & Airline Availability Panel
+                  </h2>
+                  <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                    Real-time ticker availability checker and multi-parameter sorting for {activeRouteObj.label} ({targetDateStr})
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSearchResults(null)}
-                  className={`text-xs font-mono ${isDark ? "text-slate-500 hover:text-slate-300" : "text-[#4A6356] hover:text-[#1C2E24]"}`}
-                >
-                  ✕ Close
-                </button>
+
+                {/* SORT & FILTER CONTROLS */}
+                <div className="flex items-center gap-2">
+                  <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                    Sort By:
+                  </label>
+                  <select
+                    value={airlineSort}
+                    onChange={(e) => setAirlineSort(e.target.value as AirlineSortKey)}
+                    className={`text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:outline-none ${
+                      isDark
+                        ? "bg-slate-950 border border-slate-800 text-white focus:ring-[#00BB77]"
+                        : "bg-white border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
+                    }`}
+                  >
+                    <option value="recommended">Recommended</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name">Airline Name</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {searchResults.options.map((opt: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className={`border rounded-xl p-3 flex justify-between items-center hover:border-[#00BB77]/50 transition-all ${
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {airlineCards.map((carrier) => (
+                  <a
+                    key={carrier.name}
+                    href={carrier.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group relative border rounded-xl p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
                       isDark
-                        ? "bg-slate-950 border-slate-800"
-                        : "bg-[#F4F8F5] border-[#C2DFD0]"
+                        ? "bg-slate-950 border-slate-800 hover:border-emerald-500/50 hover:shadow-emerald-500/10"
+                        : "bg-[#F4F8F5] border-[#C2DFD0] hover:border-[#3B7A57] hover:bg-white hover:shadow-[#1C2E24]/10"
                     }`}
                   >
                     <div>
-                      <p className={`text-xs font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
-                        {opt.airline} <span className={`text-[10px] font-mono ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>({opt.code})</span>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-xs font-bold ${
+                            isDark
+                              ? "text-slate-200 group-hover:text-emerald-400"
+                              : "text-[#1C2E24] group-hover:text-[#3B7A57]"
+                          }`}
+                        >
+                          {carrier.name}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                            isDark
+                              ? "bg-slate-800 text-slate-400"
+                              : "bg-[#E8F0EC] text-[#4A6356]"
+                          }`}
+                        >
+                          {carrier.code}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between text-[10px]">
+                        <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Rating: ★ {carrier.rating}</span>
+                        <span className="text-emerald-500 font-mono font-bold">● {carrier.seatsLeft} Seats Left</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-dashed border-slate-700/40">
+                      <p className={`text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
+                        Live Mapped Fare
                       </p>
-                      <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>{opt.type} • {opt.duration}</p>
+                      <p
+                        className={`text-lg font-extrabold ${
+                          isDark
+                            ? "text-white group-hover:text-emerald-400"
+                            : "text-[#1C2E24] group-hover:text-[#2D5E43]"
+                        } transition-colors`}
+                      >
+                        ₹{carrier.price.toLocaleString("en-IN")}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-extrabold ${isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}`}>{opt.price}</p>
-                      <span className={`text-[9px] font-mono ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>Index: {searchResults.jevonsIndex}</span>
+
+                    <div className={`mt-2 text-[10px] flex items-center justify-between group-hover:underline ${isDark ? "text-emerald-400" : "text-[#3B7A57]"}`}>
+                      <span>Verify & Book</span>
+                      <span>➔</span>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
-            </div>
-          )}
-        </section>
+            </section>
 
-        {/* WORKSPACE & GRAPH AREA */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <main
-            className={`lg:col-span-3 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
-              isDark
-                ? "bg-slate-900/50 border-slate-800"
-                : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
-                    Past History & Index Analytics
-                  </h3>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                    Statistical geometric Jevons index trends over historical time-series horizons
-                  </p>
-                </div>
-              </div>
-
-              {/* SUMMARY METRIC CARDS */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div
-                  className={`border p-3 rounded-xl ${
-                    isDark
-                      ? "bg-slate-950/80 border-slate-800"
-                      : "bg-[#F4F8F5] border-[#C2DFD0]"
-                  }`}
-                >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                    Est. Current Fare
-                  </p>
-                  <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-blue-500" : "text-[#2D5E43]"}`}>
-                    ₹{currentPrice.toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <div
-                  className={`border p-3 rounded-xl ${
-                    isDark
-                      ? "bg-slate-950/80 border-slate-800"
-                      : "bg-[#F4F8F5] border-[#C2DFD0]"
-                  }`}
-                >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                    Jevons Index
-                  </p>
-                  <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>{currentIndex}</p>
-                </div>
-                <div
-                  className={`border p-3 rounded-xl ${
-                    isDark
-                      ? "bg-slate-950/80 border-slate-800"
-                      : "bg-[#F4F8F5] border-[#C2DFD0]"
-                  }`}
-                >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                    Min / Max Range
-                  </p>
-                  <p className={`text-sm font-bold mt-1 ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>
-                    ₹{minPrice.toLocaleString("en-IN")} - ₹{maxPrice.toLocaleString("en-IN")}
-                  </p>
-                </div>
-
-                {/* UPDATED TREND CARD: Price Drop = Green, Price Hike = Red */}
-                <div
-                  className={`border p-3 rounded-xl ${
-                    isDark
-                      ? "bg-slate-950/80 border-slate-800"
-                      : "bg-[#F4F8F5] border-[#C2DFD0]"
-                  }`}
-                >
-                  <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                    Trend ({timeframe})
-                  </p>
-                  <p
-                    className={`text-xl font-bold mt-0.5 ${
-                      numChange < 0
-                        ? "text-emerald-500" // Drop in price = GREEN (Good)
-                        : numChange > 0
-                        ? "text-rose-500"    // Spike in price = RED (Bad)
-                        : isDark
-                        ? "text-slate-200"
-                        : "text-[#1C2E24]"
-                    }`}
-                  >
-                    {numChange > 0 ? `+${periodChange}%` : `${periodChange}%`}
-                  </p>
-                </div>
-              </div>
-
-              {/* CHART VIEWPORT */}
-              <div
-                className={`w-full h-[380px] p-4 rounded-xl border flex items-center justify-center ${
+            {/* LIVE GRAPH & CUSTOMER-ORIENTED COMMENTS & SUGGESTIONS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <main
+                className={`lg:col-span-2 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${
                   isDark
-                    ? "bg-slate-950/60 border-slate-800"
-                    : "bg-[#F4F8F5] border-[#C2DFD0]"
+                    ? "bg-slate-900/50 border-slate-800"
+                    : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
                 }`}
               >
-                {loading ? (
-                  <div className={`text-sm animate-pulse flex items-center gap-2 ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
-                    <span className={`w-2 h-2 rounded-full animate-ping ${isDark ? "bg-blue-500" : "bg-[#3B7A57]"}`} />
-                    Loading trends for {selectedRoute} (T+{selectedLeadTime})...
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                        Real-Time Price & Index Mapping Feed
+                      </h3>
+                      <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                        Live telemetry tracking trends for {activeRouteObj.label}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setMetricView("price")}
+                        className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                          metricView === "price"
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : isDark ? "text-slate-400 hover:text-white bg-slate-950" : "text-[#4A6356] bg-white"
+                        }`}
+                      >
+                        Price (₹)
+                      </button>
+                      <button
+                        onClick={() => setMetricView("index")}
+                        className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                          metricView === "index"
+                            ? "bg-purple-600 text-white shadow-sm"
+                            : isDark ? "text-slate-400 hover:text-white bg-slate-950" : "text-[#4A6356] bg-white"
+                        }`}
+                      >
+                        Jevons Index
+                      </button>
+                    </div>
                   </div>
-                ) : error ? (
-                  <div className="text-center space-y-1">
-                    <p className="text-rose-500 text-sm font-medium">Error loading trends</p>
-                    <p className={`text-xs font-mono ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>{error}</p>
+
+                  {/* SUMMARY CARDS */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <div className={`border p-3 rounded-xl ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
+                      <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Current Fare</p>
+                      <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-blue-500" : "text-[#2D5E43]"}`}>₹{currentPrice.toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className={`border p-3 rounded-xl ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
+                      <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Jevons Index</p>
+                      <p className={`text-xl font-bold mt-0.5 ${isDark ? "text-purple-500" : "text-[#3B7A57]"}`}>{currentIndex}</p>
+                    </div>
+                    <div className={`border p-3 rounded-xl ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
+                      <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Min / Max</p>
+                      <p className={`text-xs font-bold mt-1.5 ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>₹{minPrice} - ₹{maxPrice}</p>
+                    </div>
+                    <div className={`border p-3 rounded-xl ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
+                      <p className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Trend ({timeframe})</p>
+                      <p className={`text-xl font-bold mt-0.5 ${numChange < 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                        {numChange > 0 ? `+${periodChange}%` : `${periodChange}%`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* CHART */}
+                  <div className={`w-full h-[320px] p-4 rounded-xl border flex items-center justify-center ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-[#F4F8F5] border-[#C2DFD0]"}`}>
+                    {loading ? (
+                      <div className={`text-sm animate-pulse flex items-center gap-2 ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>
+                        <span className="w-2 h-2 rounded-full animate-ping bg-emerald-500" />
+                        Loading live telemetry stream...
+                      </div>
+                    ) : error ? (
+                      <p className="text-rose-500 text-xs font-medium">{error}</p>
+                    ) : filteredData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={filteredData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#C2DFD0"} opacity={0.7} />
+                          <XAxis dataKey="calculation_date" stroke={isDark ? "#64748b" : "#4A6356"} tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }} tickLine={false} />
+                          <YAxis stroke={isDark ? "#64748b" : "#4A6356"} tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }} domain={["auto", "auto"]} tickLine={false} tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: isDark ? "#0f172a" : "#F4F8F5",
+                              borderColor: isDark ? "#334155" : "#C2DFD0",
+                              color: isDark ? "#ffffff" : "#1C2E24",
+                              borderRadius: "0.75rem",
+                            }}
+                            formatter={(val: any) => [metricView === "price" ? `₹${Number(val).toLocaleString("en-IN")}` : val, metricView === "price" ? "Estimated Fare" : "Jevons Index"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
+                            stroke={metricView === "price" ? "#00BB77" : "#a855f7"}
+                            strokeWidth={2.5}
+                            dot={{ fill: metricView === "price" ? "#00BB77" : "#a855f7", r: 3 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-xs text-slate-500">No data entries available.</p>
+                    )}
+                  </div>
+                </div>
+              </main>
+
+              {/* CUSTOMER-ORIENTED GRAPH COMMENTS & SUGGESTIONS PANEL */}
+              <aside className={`border rounded-2xl p-5 flex flex-col justify-between space-y-4 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"}`}>
+                <div>
+                  <div className="flex items-center justify-between border-b pb-3 mb-4">
+                    <h3 className={`text-sm font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                      <span>💬 Graph Analytics & Insights</span>
+                    </h3>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${graphInsight.bg} ${graphInsight.color}`}>
+                      {graphInsight.badge}
+                    </span>
+                  </div>
+
+                  <div className="space-y-4 text-xs leading-relaxed">
+                    <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                      <p className={`font-bold mb-1 ${isDark ? "text-slate-300" : "text-[#1C2E24]"}`}>Customer Comment:</p>
+                      <p className={isDark ? "text-slate-400" : "text-[#4A6356]"}>{graphInsight.comment}</p>
+                    </div>
+
+                    <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                      <p className={`font-bold mb-1 text-emerald-500`}>Smart Suggestion:</p>
+                      <p className={isDark ? "text-slate-300" : "text-[#1C2E24]"}>{graphInsight.suggestion}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-xl border text-[11px] ${isDark ? "bg-slate-950/40 border-slate-800 text-slate-400" : "bg-[#F4F8F5] border-[#C2DFD0] text-[#4A6356]"}`}>
+                  <p className="font-semibold mb-1">Route & Window Selection:</p>
+                  <p>Route: <span className="font-mono text-emerald-500">{selectedRoute}</span></p>
+                  <p>Lead Time: <span className="font-mono text-emerald-500">T+{selectedLeadTime} Days</span></p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 2: HISTORIC TRENDS & DATABASE ANALYTICS PANEL        */}
+        {/* ======================================================== */}
+        {activeTab === "historic" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className={`border rounded-2xl p-6 ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"}`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b pb-4">
+                <div>
+                  <h2 className={`text-xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
+                    <span>📈 Database-Oriented Past Historic Analytics</span>
+                  </h2>
+                  <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
+                    Comprehensive archival time-series and Jevons index metrics stored in the Supabase database
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedRoute}
+                    onChange={(e) => setSelectedRoute(e.target.value)}
+                    className={`text-xs rounded-lg px-3 py-2 focus:ring-2 focus:outline-none ${
+                      isDark
+                        ? "bg-slate-950 border border-slate-800 text-white focus:ring-purple-500"
+                        : "bg-white border border-[#C2DFD0] text-[#1C2E24] focus:ring-[#3B7A57]"
+                    }`}
+                  >
+                    {AVAILABLE_ROUTES.map((r) => (
+                      <option key={r.code} value={r.code}>
+                        {r.label} ({r.code})
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => setTimeframe("ALL")}
+                    className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${
+                      timeframe === "ALL"
+                        ? "bg-purple-600 text-white"
+                        : isDark ? "bg-slate-950 text-slate-400 border border-slate-800" : "bg-white text-[#4A6356] border border-[#C2DFD0]"
+                    }`}
+                  >
+                    View All Archive
+                  </button>
+                </div>
+              </div>
+
+              {/* ARCHIVAL SUMMARY METRICS */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className={`border p-4 rounded-xl ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Total Archival Data Points</p>
+                  <p className={`text-2xl font-black mt-1 ${isDark ? "text-purple-400" : "text-[#2D5E43]"}`}>{data.length} Records</p>
+                </div>
+                <div className={`border p-4 rounded-xl ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Archival Peak Jevons Index</p>
+                  <p className={`text-2xl font-black mt-1 ${isDark ? "text-emerald-400" : "text-[#3B7A57]"}`}>
+                    {data.length ? Math.max(...data.map(d => d.jevons_index ?? 100)) : 100}
+                  </p>
+                </div>
+                <div className={`border p-4 rounded-xl ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Archival Lowest Fare Recorded</p>
+                  <p className={`text-2xl font-black mt-1 text-blue-500`}>
+                    ₹{data.length ? Math.min(...data.map(d => d.estimated_price ?? 5000)).toLocaleString("en-IN") : 5000}
+                  </p>
+                </div>
+              </div>
+
+              {/* HISTORIC JEVONS INDEX & PRICE GRAPH */}
+              <div className={`w-full h-[400px] p-4 rounded-xl border flex items-center justify-center ${isDark ? "bg-slate-950/80 border-slate-800" : "bg-white border-[#C2DFD0]"}`}>
+                {loading ? (
+                  <div className={`text-sm animate-pulse ${isDark ? "text-purple-400" : "text-[#3B7A57]"}`}>
+                    Loading database archival records...
                   </div>
                 ) : filteredData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={filteredData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#334155" : "#C2DFD0"} opacity={0.7} />
-                      <XAxis
-                        dataKey="calculation_date"
-                        stroke={isDark ? "#64748b" : "#4A6356"}
-                        tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        stroke={isDark ? "#64748b" : "#4A6356"}
-                        tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }}
-                        domain={["auto", "auto"]}
-                        tickLine={false}
-                        tickFormatter={(val) => (metricView === "price" ? `₹${val}` : val)}
-                      />
+                      <XAxis dataKey="calculation_date" stroke={isDark ? "#64748b" : "#4A6356"} tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }} tickLine={false} />
+                      <YAxis stroke={isDark ? "#64748b" : "#4A6356"} tick={{ fill: isDark ? "#94a3b8" : "#4A6356", fontSize: 11 }} domain={["auto", "auto"]} tickLine={false} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: isDark ? "#0f172a" : "#F4F8F5",
                           borderColor: isDark ? "#334155" : "#C2DFD0",
                           color: isDark ? "#ffffff" : "#1C2E24",
                           borderRadius: "0.75rem",
-                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                        }}
-                        formatter={(val: any) => {
-                          if (val === undefined || val === null) return ["N/A", metricView === "price" ? "Estimated Fare" : "Jevons Index"];
-                          const formattedVal =
-                            metricView === "price"
-                              ? `₹${Number(val).toLocaleString("en-IN")}`
-                              : String(val);
-                          return [formattedVal, metricView === "price" ? "Estimated Fare" : "Jevons Index"];
                         }}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey={metricView === "price" ? "estimated_price" : "jevons_index"}
-                        stroke={
-                          metricView === "price"
-                            ? isDark ? "#3b82f6" : "#2D5E43"
-                            : isDark ? "#a855f7" : "#3B7A57"
-                        }
-                        strokeWidth={2.5}
-                        dot={{
-                          fill: metricView === "price"
-                            ? isDark ? "#3b82f6" : "#2D5E43"
-                            : isDark ? "#a855f7" : "#3B7A57",
-                          r: 3
-                        }}
-                      />
+                      <Line type="monotone" dataKey="jevons_index" name="Jevons Index" stroke="#a855f7" strokeWidth={2.5} dot={{ fill: "#a855f7", r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className={`text-xs ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
-                    No metric entries found for {selectedRoute}.
-                  </p>
+                  <p className="text-xs text-slate-500">No historic database records found.</p>
                 )}
               </div>
             </div>
-
-            <div
-              className={`pt-4 border-t flex items-center justify-between text-xs ${
-                isDark ? "border-slate-800/80 text-slate-400" : "border-[#C2DFD0] text-[#4A6356]"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span className="animate-bounce">↓</span>
-                <span>Scroll down or trigger button on right panel to scrape more real-time carrier quotes</span>
-              </span>
-              <span className={`font-mono text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>
-                Route: {selectedRoute}
-              </span>
-            </div>
-          </main>
-
-          {/* SIDEBAR */}
-          <aside className="lg:col-span-1 flex flex-col gap-6">
-            <div
-              className={`border rounded-2xl p-4 ${
-                isDark
-                  ? "bg-slate-900/50 border-slate-800"
-                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
-              }`}
-            >
-              <h4
-                className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
-                  isDark ? "text-slate-400 border-slate-800" : "text-[#4A6356] border-[#C2DFD0]"
-                }`}
-              >
-                Status of DB & Route Data
-              </h4>
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Database Engine</span>
-                  <span className={`font-mono font-semibold ${isDark ? "text-emerald-500" : "text-[#2D5E43]"}`}>● Supabase Live</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Active Routes</span>
-                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>6 City-Pairs</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Lead Windows</span>
-                  <span className={`font-mono ${isDark ? "text-slate-200" : "text-[#1C2E24]"}`}>T+1 to T+45</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={isDark ? "text-slate-400" : "text-[#4A6356]"}>Scrape Status</span>
-                  <span className={`font-mono ${isDark ? "text-blue-500" : "text-[#3B7A57]"}`}>Playwright Ready</span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={`border rounded-2xl p-4 flex flex-col justify-between space-y-4 ${
-                isDark
-                  ? "bg-slate-900/50 border-slate-800"
-                  : "bg-[#E8F0EC] border-[#C2DFD0] shadow-sm"
-              }`}
-            >
-              <div>
-                <h4
-                  className={`text-xs uppercase tracking-wider font-bold mb-3 border-b pb-2 ${
-                    isDark ? "text-slate-400 border-slate-800" : "text-[#4A6356] border-[#C2DFD0]"
-                  }`}
-                >
-                  System Scraping Trigger
-                </h4>
-                <p className={`text-xs leading-relaxed mb-4 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-                  Manually trigger backend Playwright headless workers to scrape current prices across routes.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  alert(
-                    `Triggering real-time Playwright scraper for ${selectedRoute} (T+${selectedLeadTime})...`
-                  )
-                }
-                className={`w-full font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all text-white ${
-                  isDark
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 hover:shadow-blue-500/40"
-                    : "bg-[#3B7A57] hover:bg-[#2D5E43] shadow-[#3B7A57]/20 hover:shadow-[#3B7A57]/40"
-                }`}
-              >
-                <span>Get More Data (Run Scraper)</span>
-                <span>➔</span>
-              </button>
-            </div>
-          </aside>
-        </div>
+          </div>
+        )}
 
         {/* FOOTER */}
         <footer
@@ -1191,13 +1193,8 @@ export default function Home() {
               </h3>
             </div>
             <p className={`text-xs leading-relaxed ${isDark ? "text-slate-300" : "text-[#4A6356]"}`}>
-              The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> was constructed to address volatile dynamic pricing algorithms across Indian domestic aviation sectors. By monitoring pricing behaviors across advance purchase windows (T+1 to T+45 days), NAPIER brings market transparency to travelers, enterprise procurement teams, and aviation analysts.
+              The <strong>National Airfare Price Index Engine Real-time (NAPIER)</strong> provides dual-panel telemetry for live price mapping and database-oriented historic analytics across aviation sectors.
             </p>
-            <ul className={`text-xs space-y-2 list-disc list-inside pt-1 ${isDark ? "text-slate-300" : "text-[#4A6356]"}`}>
-              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Jevons Index Tracking:</strong> Utilizes geometric mean formulas to neutralize price extreme outliers across airlines.</li>
-              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Advance Purchase Optimization:</strong> Identifies ideal booking horizons to minimize fare inflation risk.</li>
-              <li><strong className={isDark ? "text-[#00BB77]" : "text-[#2D5E43]"}>Real-time Verification:</strong> Integrates automated scrapers to validate benchmark indicators against actual live carrier listings.</li>
-            </ul>
           </div>
 
           <div
@@ -1210,23 +1207,19 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${isDark ? "bg-purple-500" : "bg-[#3B7A57]"}`} />
               <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#1C2E24]"}`}>
-                About Us
+                About Us & System Status
               </h3>
             </div>
             <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              NAPIER is an open statistical initiative built by data engineers and aviation economists. We aim to offer an unbiased index metric for domestic air travel, acting as a standardized market barometer similar to traditional consumer price indexes.
+              NAPIER is an open statistical initiative built by data engineers and aviation economists, offering live mapping and archival Jevons Index tracking.
             </p>
-            <div className={`pt-2 text-xs space-y-1 ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>
-              <p><strong className={isDark ? "text-slate-300" : "text-[#1C2E24]"}>Data Sources:</strong> Real-time automated web workers, public carrier listings, and historical price aggregators.</p>
-              <p><strong className={isDark ? "text-slate-300" : "text-[#1C2E24]"}>Core Engine:</strong> Next.js frontend, Supabase DB backend, and Playwright scraping pipelines.</p>
-            </div>
             <div
               className={`pt-2 text-[11px] border-t flex justify-between items-center ${
                 isDark ? "text-slate-500 border-slate-800/60" : "text-[#4A6356]/70 border-[#C2DFD0]"
               }`}
             >
               <span>© 2026 NAPIER Engine</span>
-              <span>v1.0.4 Live Telemetry</span>
+              <span>v1.0.8 Dual-Panel Active</span>
             </div>
           </div>
         </footer>
