@@ -39,6 +39,11 @@ export interface ChatResponse {
   ml_summary: Record<string, any>;
 }
 
+export function buildGoogleFlightsUrl(origin: string, destination: string, date: string, airline?: string): string {
+  const query = `One way flights to ${destination} from ${origin} on ${date}${airline ? ` on ${airline}` : ""}`;
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
+}
+
 export async function fetchRoutePrediction(origin: string, destination: string): Promise<MLPrediction> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/predict/${origin}/${destination}`);
@@ -81,6 +86,7 @@ export async function sendChatMessage(message: string, origin: string = "DEL", d
     return await res.json();
   } catch (err) {
     console.warn("Assistant fallback active:", err);
+    const targetDate = "2026-10-15";
     return {
       markdown_advice: `### ✈️ Assistant Advice for ${origin}-${destination}\n\n**Recommendation:** GREAT TIME TO BOOK\n\n- **24h Projection:** ₹4,750\n- **7d Projection:** ₹5,240\n\nFestival travel demand is accelerating on this route. We recommend securing seats early.`,
       status_badge: "SURGE_WARNING",
@@ -91,9 +97,9 @@ export async function sendChatMessage(message: string, origin: string = "DEL", d
         "Which airline offers the best price right now?"
       ],
       carrier_links: [
-        { name: "IndiGo", code: "6E", price: 4520, seats_left: 3, booking_url: "https://www.google.com/travel/flights" },
-        { name: "Air India Express", code: "IX", price: 4380, seats_left: 2, booking_url: "https://www.google.com/travel/flights" },
-        { name: "Akasa Air", code: "QP", price: 4470, seats_left: 5, booking_url: "https://www.google.com/travel/flights" }
+        { name: "IndiGo", code: "6E", price: 4520, seats_left: 3, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "IndiGo") },
+        { name: "Air India Express", code: "IX", price: 4380, seats_left: 2, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "Air India Express") },
+        { name: "Akasa Air", code: "QP", price: 4470, seats_left: 5, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "Akasa Air") }
       ],
       ml_summary: {}
     };

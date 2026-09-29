@@ -1,9 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+from urllib.parse import quote
 from app.ml.forecaster import forecaster
 
 router = APIRouter()
+
+def build_google_flights_url(origin: str, destination: str, date: str, airline: str = "") -> str:
+    query = f"One way flights to {destination} from {origin} on {date}"
+    if airline:
+        query += f" on {airline}"
+    return f"https://www.google.com/travel/flights?q={quote(query)}"
 
 class ChatRequest(BaseModel):
     message: str
@@ -44,35 +51,35 @@ def assistant_chat(req: ChatRequest):
             code="6E",
             price=round(base_price * 0.95),
             seats_left=3,
-            booking_url=f"https://www.google.com/travel/flights?q=Flights%20to%20{destination}%20from%20{origin}%20on%20{target_date}%20on%20IndiGo"
+            booking_url=build_google_flights_url(origin, destination, target_date, "IndiGo")
         ),
         CarrierQuote(
             name="Air India",
             code="AI",
             price=round(base_price * 1.08),
             seats_left=7,
-            booking_url=f"https://www.google.com/travel/flights?q=Flights%20to%20{destination}%20from%20{origin}%20on%20{target_date}%20on%20Air%20India"
+            booking_url=build_google_flights_url(origin, destination, target_date, "Air India")
         ),
         CarrierQuote(
             name="Air India Express",
             code="IX",
             price=round(base_price * 0.92),
             seats_left=2,
-            booking_url=f"https://www.google.com/travel/flights?q=Flights%20to%20{destination}%20from%20{origin}%20on%20{target_date}%20on%20Air%20India%20Express"
+            booking_url=build_google_flights_url(origin, destination, target_date, "Air India Express")
         ),
         CarrierQuote(
             name="Akasa Air",
             code="QP",
             price=round(base_price * 0.94),
             seats_left=5,
-            booking_url=f"https://www.google.com/travel/flights?q=Flights%20to%20{destination}%20from%20{origin}%20on%20{target_date}%20on%20Akasa%20Air"
+            booking_url=build_google_flights_url(origin, destination, target_date, "Akasa Air")
         ),
         CarrierQuote(
             name="SpiceJet",
             code="SG",
             price=round(base_price * 0.98),
             seats_left=11,
-            booking_url=f"https://www.google.com/travel/flights?q=Flights%20to%20{destination}%20from%20{origin}%20on%20{target_date}%20on%20SpiceJet"
+            booking_url=build_google_flights_url(origin, destination, target_date, "SpiceJet")
         ),
     ]
 

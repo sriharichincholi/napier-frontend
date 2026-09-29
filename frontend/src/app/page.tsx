@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { fetchRoutePrediction, MLPrediction, sendChatMessage, CarrierQuote } from "@/lib/api";
+import { fetchRoutePrediction, MLPrediction, sendChatMessage, CarrierQuote, buildGoogleFlightsUrl } from "@/lib/api";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -56,11 +56,9 @@ const SEARCH_AUTOPROMPTS = [
 ];
 
 export default function Home() {
-  // Theme & Panel Navigation States
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [activeTab, setActiveTab] = useState<MainTab>("live");
 
-  // Selection States
   const [selectedRoute, setSelectedRoute] = useState("DEL-BOM");
   const [prediction, setPrediction] = useState<MLPrediction | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,13 +66,11 @@ export default function Home() {
   const [airlineSort, setAirlineSort] = useState<AirlineSortKey>("recommended");
   const [timeframe, setTimeframe] = useState<TimeFrame>("30d");
 
-  // Dynamic Route Search States
   const [searchQuery, setSearchQuery] = useState("Delhi to Mumbai");
   const [showAutoPrompts, setShowAutoPrompts] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any | null>(null);
 
-  // AI Drawer Sidebar State
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<
     { sender: "user" | "ai"; text: string; badge?: string; carrierLinks?: CarrierQuote[] }[]
@@ -149,35 +145,35 @@ export default function Home() {
         code: "6E",
         price: Math.round(base * 0.95),
         seats_left: 3,
-        booking_url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDate}%20on%20IndiGo`,
+        booking_url: buildGoogleFlightsUrl(o, d, targetDate, "IndiGo"),
       },
       {
         name: "Air India",
         code: "AI",
         price: Math.round(base * 1.08),
         seats_left: 7,
-        booking_url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDate}%20on%20Air%20India`,
+        booking_url: buildGoogleFlightsUrl(o, d, targetDate, "Air India"),
       },
       {
         name: "Air India Express",
         code: "IX",
         price: Math.round(base * 0.92),
         seats_left: 2,
-        booking_url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDate}%20on%20Air%20India%20Express`,
+        booking_url: buildGoogleFlightsUrl(o, d, targetDate, "Air India Express"),
       },
       {
         name: "Akasa Air",
         code: "QP",
         price: Math.round(base * 0.94),
         seats_left: 5,
-        booking_url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDate}%20on%20Akasa%20Air`,
+        booking_url: buildGoogleFlightsUrl(o, d, targetDate, "Akasa Air"),
       },
       {
         name: "SpiceJet",
         code: "SG",
         price: Math.round(base * 0.98),
         seats_left: 11,
-        booking_url: `https://www.google.com/travel/flights?q=Flights%20to%20${d}%20from%20${o}%20on%20${targetDate}%20on%20SpiceJet`,
+        booking_url: buildGoogleFlightsUrl(o, d, targetDate, "SpiceJet"),
       },
     ];
 
@@ -246,7 +242,7 @@ export default function Home() {
         isDark ? "bg-slate-950 text-slate-100" : "bg-[#F4F8F5] text-[#1C2E24]"
       }`}
     >
-      {/* 1. BRANDING & HEADER LAYOUT (CENTERED NAPIER LOGO) */}
+      {/* HEADER LAYOUT */}
       <header
         className={`p-6 border-b sticky top-0 z-40 flex items-center justify-between backdrop-blur transition-colors ${
           isDark ? "border-slate-900 bg-slate-950/80" : "border-[#D8E6DF] bg-[#F4F8F5]/85"
@@ -262,7 +258,6 @@ export default function Home() {
               }`}
             />
 
-            {/* Original Brand Logo Icon (Upward trending growth chart inside gradient badge) */}
             <div
               className={`relative w-11 h-11 md:w-13 md:h-13 rounded-xl flex items-center justify-center shadow-lg border border-white/20 shrink-0 ${
                 isDark
@@ -307,7 +302,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Top Right Navigation Controls */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
           <button
             onClick={toggleTheme}
@@ -380,9 +374,7 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* MAIN CONTAINER CONTENT */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-8">
-        {/* STANDALONE ROUTE SELECTION CONTROL BAR WITH GLOW */}
         <div
           className={`relative overflow-hidden rounded-2xl p-4 shadow-xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-all ${
             isDark ? "bg-slate-900/90 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0]"
@@ -421,10 +413,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* PANEL 1: LIVE ANALYTICS & MAPPING */}
         {activeTab === "live" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* DYNAMIC ROUTE SEARCH PANEL */}
             <section
               className={`border rounded-2xl p-4 shadow-xl relative transition-all ${
                 isDark ? "bg-slate-900/80 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0]"
@@ -451,7 +441,6 @@ export default function Home() {
                     }`}
                   />
 
-                  {/* AUTOPROMPT DROPDOWN */}
                   {showAutoPrompts && (
                     <div
                       className={`absolute left-0 right-0 top-full mt-2 rounded-xl border shadow-2xl z-20 overflow-hidden ${
@@ -518,7 +507,6 @@ export default function Home() {
               )}
             </section>
 
-            {/* SMART RECOMMENDATION BANNER WITH RUNNING GRADIENT GLOW */}
             <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-md">
               <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-rose-500 via-purple-500 to-emerald-400 animate-pulse" />
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -552,7 +540,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* HORIZON FORECAST CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: "Next Hour (T+1h)", price: prediction?.predicted_price_1h || 4820, tag: "Intra-day shifts", color: "text-emerald-400", bg: "border-emerald-500/20 bg-emerald-500/5", corridor: prediction?.confidence_corridors["1h"] || { lower: 4610, upper: 5030 } },
@@ -577,7 +564,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* INTERACTIVE PRICE CHART & COMMENTS */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <main className={`lg:col-span-2 border rounded-2xl p-5 flex flex-col justify-between space-y-6 ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0]"}`}>
                 <div>
@@ -635,7 +621,6 @@ export default function Home() {
               </aside>
             </div>
 
-            {/* CARRIER CARDS */}
             <section className={`border rounded-2xl p-5 shadow-2xl ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0]"}`}>
               <div className="flex items-center justify-between mb-5 border-b pb-4 border-slate-800">
                 <div>
@@ -643,7 +628,7 @@ export default function Home() {
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
                     Live Price Mapping & Airline Availability Panel
                   </h2>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Direct verification & booking links</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-[#4A6356]"}`}>Direct verification & booking links (One-Way Search)</p>
                 </div>
                 <select value={airlineSort} onChange={(e) => setAirlineSort(e.target.value as AirlineSortKey)} className={`text-xs rounded-lg px-3 py-1.5 ${isDark ? "bg-slate-950 border border-slate-800 text-white" : "bg-white border border-[#C2DFD0] text-[#1C2E24]"}`}>
                   <option value="recommended">Recommended</option>
@@ -670,10 +655,10 @@ export default function Home() {
                       <span className="text-[10px] text-emerald-400 font-mono font-bold mt-2 block">● {carrier.seats_left} Seats Left</span>
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-800">
-                      <p className={`text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>Live Fare</p>
+                      <p className={`text-[10px] ${isDark ? "text-slate-500" : "text-[#4A6356]"}`}>Live One-Way Fare</p>
                       <p className={`text-lg font-extrabold ${isDark ? "text-white group-hover:text-emerald-400" : "text-[#1C2E24]"}`}>₹{carrier.price.toLocaleString("en-IN")}</p>
                     </div>
-                    <span className="text-[10px] text-emerald-400 mt-2 block font-semibold">Verify & Book ➔</span>
+                    <span className="text-[10px] text-emerald-400 mt-2 block font-semibold">Verify & Book (One-Way) ➔</span>
                   </a>
                 ))}
               </div>
@@ -681,7 +666,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* PANEL 2: HISTORIC TRENDS */}
         {activeTab === "historic" && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className={`border rounded-2xl p-6 ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-[#E8F0EC] border-[#C2DFD0]"}`}>
@@ -711,7 +695,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 2. RESTORE FOOTER: PURPOSE & ABOUT US SECTIONS */}
         <footer
           className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${
             isDark ? "border-slate-900 text-slate-300" : "border-[#C2DFD0] text-[#1C2E24]"
@@ -762,7 +745,6 @@ export default function Home() {
         </footer>
       </div>
 
-      {/* 4. FIXED FLOATING AI ASSISTANT FAB */}
       <button
         onClick={() => setIsAiSidebarOpen((prev) => !prev)}
         className={`fixed bottom-6 right-6 z-40 hover:scale-105 transition-all duration-300 p-4 rounded-full shadow-2xl border border-white/20 flex items-center justify-center group ${
@@ -778,7 +760,6 @@ export default function Home() {
         </span>
       </button>
 
-      {/* SLIDING AI SIDEBAR */}
       {isAiSidebarOpen && (
         <div
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity"
