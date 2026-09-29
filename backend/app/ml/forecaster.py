@@ -80,7 +80,9 @@ class PriceForecaster:
 
     def predict_route_fare(self, origin: str, destination: str, current_live_base: float = None) -> Dict[str, Any]:
         route_code = f"{origin.upper()}-{destination.upper()}"
-        base_fare = current_live_base or self.BASE_ROUTE_FARES.get(route_code, 5200.0)
+        isIntl = origin.upper() in ("FRA", "LHR", "DXB", "SIN", "JFK", "CDG") or destination.upper() in ("FRA", "LHR", "DXB", "SIN", "JFK", "CDG")
+        default_base = 45000.0 if isIntl else 5200.0
+        base_fare = current_live_base or self.BASE_ROUTE_FARES.get(route_code, default_base)
 
         now = datetime.datetime.now(datetime.timezone.utc)
         today = now.date()

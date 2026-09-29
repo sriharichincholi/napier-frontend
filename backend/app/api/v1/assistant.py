@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -35,7 +34,6 @@ async def assistant_chat(req: ChatRequest):
     destination = req.destination.upper() if req.destination else "BOM"
     route_code = f"{origin}-{destination}"
 
-    # Scrape live quotes for actual requested origin and destination
     scraped_quotes = await scrape_google_flights_live(origin, destination)
 
     carrier_links = [
@@ -48,7 +46,7 @@ async def assistant_chat(req: ChatRequest):
         ) for q in scraped_quotes
     ]
 
-    base_price = scraped_quotes[0]["price"] if scraped_quotes else 5200.0
+    base_price = scraped_quotes[0]["price"] if scraped_quotes else (45000.0 if origin in ("FRA", "LHR", "DXB", "SIN") else 5200.0)
     pred = forecaster.predict_route_fare(origin, destination, current_live_base=base_price)
 
     if "diwali" in msg_lower or "festival" in msg_lower or "holiday" in msg_lower:
