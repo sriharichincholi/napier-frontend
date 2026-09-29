@@ -1,16 +1,11 @@
+import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from urllib.parse import quote
 from app.ml.forecaster import forecaster
+from app.scrapers.scraper import scrape_google_flights_live, build_google_flights_url
 
 router = APIRouter()
-
-def build_google_flights_url(origin: str, destination: str, date: str, airline: str = "") -> str:
-    query = f"One way flights to {destination} from {origin} on {date}"
-    if airline:
-        query += f" on {airline}"
-    return f"https://www.google.com/travel/flights?q={quote(query)}"
 
 class ChatRequest(BaseModel):
     message: str
@@ -34,54 +29,27 @@ class ChatResponse(BaseModel):
     ml_summary: Dict[str, Any]
 
 @router.post("/chat", response_model=ChatResponse)
-def assistant_chat(req: ChatRequest):
+async def assistant_chat(req: ChatRequest):
     msg_lower = req.message.lower().strip()
     origin = req.origin.upper() if req.origin else "DEL"
     destination = req.destination.upper() if req.destination else "BOM"
     route_code = f"{origin}-{destination}"
 
-    pred = forecaster.predict_route_fare(origin, destination)
-
-    base_price = pred["predicted_price_24h"]
-    target_date = "2026-10-15"
+    # Scrape live quotes for actual requested origin and destination
+    scraped_quotes = await scrape_google_flights_live(origin, destination)
 
     carrier_links = [
         CarrierQuote(
-            name="IndiGo",
-            code="6E",
-            price=round(base_price * 0.95),
-            seats_left=3,
-            booking_url=build_google_flights_url(origin, destination, target_date, "IndiGo")
-        ),
-        CarrierQuote(
-            name="Air India",
-            code="AI",
-            price=round(base_price * 1.08),
-            seats_left=7,
-            booking_url=build_google_flights_url(origin, destination, target_date, "Air India")
-        ),
-        CarrierQuote(
-            name="Air India Express",
-            code="IX",
-            price=round(base_price * 0.92),
-            seats_left=2,
-            booking_url=build_google_flights_url(origin, destination, target_date, "Air India Express")
-        ),
-        CarrierQuote(
-            name="Akasa Air",
-            code="QP",
-            price=round(base_price * 0.94),
-            seats_left=5,
-            booking_url=build_google_flights_url(origin, destination, target_date, "Akasa Air")
-        ),
-        CarrierQuote(
-            name="SpiceJet",
-            code="SG",
-            price=round(base_price * 0.98),
-            seats_left=11,
-            booking_url=build_google_flights_url(origin, destination, target_date, "SpiceJet")
-        ),
+            name=q["name"],
+            code=q["code"],
+            price=q["price"],
+            seats_left=q["seats_left"],
+            booking_url=q["booking_url"]
+        ) for q in scraped_quotes
     ]
+
+    base_price = scraped_quotes[0]["price"] if scraped_quotes else 5200.0
+    pred = forecaster.predict_route_fare(origin, destination, current_live_base=base_price)
 
     if "diwali" in msg_lower or "festival" in msg_lower or "holiday" in msg_lower:
         advice = f"### 🪔 Festival & Holiday Surge Analysis for {route_code}\n\n" \

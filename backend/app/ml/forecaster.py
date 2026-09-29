@@ -63,22 +63,24 @@ class HolidayFeatureTransformer:
 
 class PriceForecaster:
     BASE_ROUTE_FARES = {
-        "DEL-BOM": 4800.0,
-        "DEL-BLR": 5400.0,
-        "BOM-BLR": 3900.0,
-        "DEL-CCU": 4600.0,
-        "BLR-HYD": 3200.0,
-        "MAA-DEL": 5100.0,
+        "DEL-BOM": 5400.0,
+        "DEL-BLR": 5800.0,
+        "BOM-BLR": 4200.0,
+        "DEL-CCU": 4900.0,
+        "BLR-HYD": 3600.0,
+        "MAA-DEL": 5300.0,
         "FRA-HYD": 48000.0,
         "LHR-BOM": 52000.0,
+        "SIN-BOM": 38000.0,
+        "DXB-DEL": 24000.0,
     }
 
     def __init__(self):
         self.transformer = HolidayFeatureTransformer()
 
-    def predict_route_fare(self, origin: str, destination: str) -> Dict[str, Any]:
+    def predict_route_fare(self, origin: str, destination: str, current_live_base: float = None) -> Dict[str, Any]:
         route_code = f"{origin.upper()}-{destination.upper()}"
-        base_fare = self.BASE_ROUTE_FARES.get(route_code, 4500.0)
+        base_fare = current_live_base or self.BASE_ROUTE_FARES.get(route_code, 5200.0)
 
         now = datetime.datetime.now(datetime.timezone.utc)
         today = now.date()
@@ -86,9 +88,9 @@ class PriceForecaster:
         feat_1d = self.transformer.get_holiday_features(today + datetime.timedelta(days=1))
         feat_7d = self.transformer.get_holiday_features(today + datetime.timedelta(days=7))
 
-        mult_1h = 1.002 + (np.random.uniform(-0.008, 0.012))
-        mult_24h = 1.0 + (feat_1d["impact_factor_pct"] / 100.0) + (np.random.uniform(-0.02, 0.02))
-        mult_7d = 1.0 + (feat_7d["impact_factor_pct"] / 100.0) + (np.random.uniform(-0.04, 0.04))
+        mult_1h = 1.002
+        mult_24h = 1.0 + (feat_1d["impact_factor_pct"] / 100.0)
+        mult_7d = 1.0 + (feat_7d["impact_factor_pct"] / 100.0)
 
         pred_1h = round(base_fare * mult_1h, 2)
         pred_24h = round(base_fare * mult_24h, 2)
