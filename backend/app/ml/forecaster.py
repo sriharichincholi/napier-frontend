@@ -1,16 +1,16 @@
+"""Heuristic short-horizon projection anchored on a LIVE fare plus holiday-demand factors.
+
+Not a trained model: every projection is `live_base * (1 + demand_factor)`. A live base is required;
+there are no static route fares or fallback prices.
+"""
 import datetime
-from typing import Dict, Any, List, Tuple
-import numpy as np
+from typing import Any
+
 import holidays
 
+
 class HolidayFeatureTransformer:
-    MAJOR_FESTIVALS_2025_2026 = {
-        datetime.date(2025, 3, 14): "Holi",
-        datetime.date(2025, 10, 2): "Dussehra",
-        datetime.date(2025, 10, 20): "Diwali",
-        datetime.date(2025, 10, 21): "Deepavali",
-        datetime.date(2025, 12, 25): "Christmas",
-        datetime.date(2025, 12, 31): "New Year's Eve",
+    MAJOR_FESTIVALS = {
         datetime.date(2026, 1, 1): "New Year's Day",
         datetime.date(2026, 1, 14): "Makar Sankranti / Pongal",
         datetime.date(2026, 1, 26): "Republic Day",
@@ -22,118 +22,89 @@ class HolidayFeatureTransformer:
     }
 
     def __init__(self):
-        self.in_holidays = holidays.India(years=[2025, 2026])
+        year = datetime.date.today().year
+        self.in_holidays = holidays.India(years=[year, year + 1])
 
-    def get_holiday_features(self, target_date: datetime.date) -> Dict[str, Any]:
-        is_official_holiday = target_date in self.in_holidays
-        festival_name = self.MAJOR_FESTIVALS_2025_2026.get(target_date) or self.in_holidays.get(target_date)
+    def get_holiday_features(self, target_date: datetime.date) -> dict[str, Any]:
+        festival_name = self.MAJOR_FESTIVALS.get(target_date) or self.in_holidays.get(target_date)
 
-        min_days_to_festival = 99
-        closest_festival = "None"
-        for fest_date, name in self.MAJOR_FESTIVALS_2025_2026.items():
+        min_days, closest = 99, None
+        for fest_date, name in self.MAJOR_FESTIVALS.items():
             diff = abs((fest_date - target_date).days)
-            if diff < min_days_to_festival:
-                min_days_to_festival = diff
-                closest_festival = name
+            if diff < min_days:
+                min_days, closest = diff, name
 
-        is_festival_window = min_days_to_festival <= 3
-        weekday = target_date.weekday()
-        is_weekend = weekday in (4, 5, 6)
+        in_window = min_days <= 3
+        is_weekend = target_date.weekday() in (4, 5, 6)
 
-        impact_pct = 0.0
-        if is_festival_window or festival_name:
-            impact_pct += 18.4
-        elif min_days_to_festival <= 7:
-            impact_pct += 10.2
+        impact = 0.0
+        if in_window or festival_name:
+            impact += 18.4
+        elif min_days <= 7:
+            impact += 10.2
         if is_weekend:
-            impact_pct += 6.5
-
+            impact += 6.5
         if target_date.month in (5, 6, 12):
-            impact_pct += 5.0
+            impact += 5.0
 
         return {
-            "is_official_holiday": is_official_holiday,
-            "festival_name": festival_name or (closest_festival if min_days_to_festival <= 3 else None),
-            "days_to_closest_festival": min_days_to_festival,
-            "is_festival_window": is_festival_window,
-            "is_weekend": is_weekend,
-            "impact_factor_pct": round(impact_pct, 1)
+            "festival_name": festival_name or (closest if in_window else None),
+            "days_to_closest_festival": min_days,
+            "impact_factor_pct": round(impact, 1),
         }
 
 
 class PriceForecaster:
-    BASE_ROUTE_FARES = {
-        "DEL-BOM": 5400.0,
-        "DEL-BLR": 5800.0,
-        "BOM-BLR": 4200.0,
-        "DEL-CCU": 4900.0,
-        "BLR-HYD": 3600.0,
-        "MAA-DEL": 5300.0,
-        "FRA-HYD": 48000.0,
-        "LHR-BOM": 52000.0,
-        "SIN-BOM": 38000.0,
-        "DXB-DEL": 24000.0,
-    }
-
     def __init__(self):
         self.transformer = HolidayFeatureTransformer()
 
-    def predict_route_fare(self, origin: str, destination: str, current_live_base: float = None) -> Dict[str, Any]:
-        route_code = f"{origin.upper()}-{destination.upper()}"
-        isIntl = origin.upper() in ("FRA", "LHR", "DXB", "SIN", "JFK", "CDG") or destination.upper() in ("FRA", "LHR", "DXB", "SIN", "JFK", "CDG")
-        default_base = 45000.0 if isIntl else 5200.0
-        base_fare = current_live_base or self.BASE_ROUTE_FARES.get(route_code, default_base)
+    def predict_route_fare(self, origin: str, destination: str, current_live_base: float) -> dict[str, Any]:
+        if not current_live_base or current_live_base <= 0:
+            raise ValueError("A live base fare is required to project prices.")
 
-        now = datetime.datetime.now(datetime.timezone.utc)
-        today = now.date()
+        base = float(current_live_base)
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        f1 = self.transformer.get_holiday_features(today + datetime.timedelta(days=1))
+        f7 = self.transformer.get_holiday_features(today + datetime.timedelta(days=7))
 
-        feat_1d = self.transformer.get_holiday_features(today + datetime.timedelta(days=1))
-        feat_7d = self.transformer.get_holiday_features(today + datetime.timedelta(days=7))
-
-        mult_1h = 1.002
-        mult_24h = 1.0 + (feat_1d["impact_factor_pct"] / 100.0)
-        mult_7d = 1.0 + (feat_7d["impact_factor_pct"] / 100.0)
-
-        pred_1h = round(base_fare * mult_1h, 2)
-        pred_24h = round(base_fare * mult_24h, 2)
-        pred_7d = round(base_fare * mult_7d, 2)
+        p1h = round(base * 1.002, 2)
+        p24h = round(base * (1 + f1["impact_factor_pct"] / 100), 2)
+        p7d = round(base * (1 + f7["impact_factor_pct"] / 100), 2)
 
         corridors = {
-            "1h": {"lower": round(pred_1h * 0.955, 2), "upper": round(pred_1h * 1.045, 2)},
-            "24h": {"lower": round(pred_24h * 0.92, 2), "upper": round(pred_24h * 1.08, 2)},
-            "7d": {"lower": round(pred_7d * 0.88, 2), "upper": round(pred_7d * 1.12, 2)},
+            "1h": {"lower": round(p1h * 0.955, 2), "upper": round(p1h * 1.045, 2)},
+            "24h": {"lower": round(p24h * 0.92, 2), "upper": round(p24h * 1.08, 2)},
+            "7d": {"lower": round(p7d * 0.88, 2), "upper": round(p7d * 1.12, 2)},
         }
 
-        total_impact = feat_7d["impact_factor_pct"]
-        if total_impact >= 15.0 or pred_7d > pred_24h * 1.08:
-            recommendation = "GREAT TIME TO BOOK"
-            advice_text = f"Prices projected to surge up to +{total_impact}% due to upcoming holiday/festival demand. Book now to lock in rates."
-            status_badge = "SURGE_WARNING"
-        elif pred_24h < base_fare * 0.96:
-            recommendation = "WAIT FOR DIP"
-            advice_text = f"Substantial intra-day price softening detected. Fares expected to dip further over the next 24 hours."
-            status_badge = "EXPECT_DIP"
+        impact = f7["impact_factor_pct"]
+        if impact >= 15.0 or p7d > p24h * 1.08:
+            rec, badge = "GREAT TIME TO BOOK", "SURGE_WARNING"
+            advice = f"Prices projected to rise up to +{impact}% on holiday/festival demand. Booking now locks in today's live fare."
+        elif p24h < base * 0.96:
+            rec, badge = "WAIT FOR DIP", "EXPECT_DIP"
+            advice = "Fares are projected to soften over the next 24 hours."
         else:
-            recommendation = "PRICES STABLE"
-            advice_text = "Market conditions show steady carrier capacity and minimal fare volatility over the 7-day window."
-            status_badge = "STABLE_MARKET"
+            rec, badge = "PRICES STABLE", "STABLE_MARKET"
+            advice = "No significant demand pressure projected over the 7-day window."
 
         return {
             "origin": origin.upper(),
             "destination": destination.upper(),
-            "route_code": route_code,
-            "base_fare": base_fare,
-            "predicted_price_1h": pred_1h,
-            "predicted_price_24h": pred_24h,
-            "predicted_price_7d": pred_7d,
+            "route_code": f"{origin.upper()}-{destination.upper()}",
+            "base_fare": base,
+            "predicted_price_1h": p1h,
+            "predicted_price_24h": p24h,
+            "predicted_price_7d": p7d,
             "confidence_corridors": corridors,
-            "holiday_impact_factor": f"+{feat_7d['impact_factor_pct']}%",
-            "holiday_impact_pct": feat_7d["impact_factor_pct"],
-            "festival_name": feat_7d["festival_name"],
-            "recommendation": recommendation,
-            "advice_text": advice_text,
-            "status_badge": status_badge,
-            "generated_at": now.isoformat()
+            "holiday_impact_factor": f"+{impact}%",
+            "holiday_impact_pct": impact,
+            "festival_name": f7["festival_name"],
+            "recommendation": rec,
+            "advice_text": advice,
+            "status_badge": badge,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
+
 
 forecaster = PriceForecaster()
