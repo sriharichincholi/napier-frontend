@@ -1,4 +1,25 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://localhost:8000";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export interface CarrierQuote {
+  name: string;
+  code: string;
+  price: number;
+  stops: number;
+  duration_min: number | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  booking_url: string;
+}
 
 export interface MLPrediction {
   origin: string;
@@ -8,11 +29,7 @@ export interface MLPrediction {
   predicted_price_1h: number;
   predicted_price_24h: number;
   predicted_price_7d: number;
-  confidence_corridors: {
-    "1h": { lower: number; upper: number };
-    "24h": { lower: number; upper: number };
-    "7d": { lower: number; upper: number };
-  };
+  confidence_corridors: Record<"1h" | "24h" | "7d", { lower: number; upper: number }>;
   holiday_impact_factor: string;
   holiday_impact_pct: number;
   festival_name: string | null;
@@ -20,14 +37,23 @@ export interface MLPrediction {
   advice_text: string;
   status_badge: string;
   generated_at: string;
+  live_carrier_quotes: CarrierQuote[];
+  departure_date: string;
+  google_flights_url: string;
 }
 
-export interface CarrierQuote {
-  name: string;
-  code: string;
-  price: number;
-  seats_left: number;
-  booking_url: string;
+export interface ResolvedRoute {
+  origin: string;
+  destination: string;
+  origin_city: string;
+  destination_city: string;
+}
+
+export interface IndexPoint {
+  calculation_date: string;
+  jevons_index_value: number;
+  avg_base_fare: number;
+  sample_count: number;
 }
 
 export interface ChatResponse {
@@ -36,72 +62,52 @@ export interface ChatResponse {
   recommendation: string;
   suggested_queries: string[];
   carrier_links: CarrierQuote[];
-  ml_summary: Record<string, any>;
 }
 
+/** One-way Google Flights results for a route/date, optionally scoped to a carrier. */
 export function buildGoogleFlightsUrl(origin: string, destination: string, date: string, airline?: string): string {
-  const query = `One way flights to ${destination} from ${origin} on ${date}${airline ? ` on ${airline}` : ""}`;
-  return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
+  const q = `One way flights from ${origin.toUpperCase()} to ${destination.toUpperCase()} on ${date}${airline ? ` on ${airline}` : ""}`;
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}&curr=INR&hl=en&tt=o`;
 }
 
-export async function fetchRoutePrediction(origin: string, destination: string): Promise<MLPrediction> {
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/predict/${origin}/${destination}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    console.warn("Prediction fallback active:", err);
-    return {
-      origin: origin.toUpperCase(),
-      destination: destination.toUpperCase(),
-      route_code: `${origin.toUpperCase()}-${destination.toUpperCase()}`,
-      base_fare: 4800,
-      predicted_price_1h: 4820,
-      predicted_price_24h: 4750,
-      predicted_price_7d: 5240,
-      confidence_corridors: {
-        "1h": { lower: 4610, upper: 5030 },
-        "24h": { lower: 4370, upper: 5130 },
-        "7d": { lower: 4610, upper: 5870 },
-      },
-      holiday_impact_factor: "+18.4%",
-      holiday_impact_pct: 18.4,
-      festival_name: "Diwali Surge Window",
-      recommendation: "GREAT TIME TO BOOK",
-      advice_text: "Prices projected to rise by ₹490 over the next week as festival surge demand builds. Lock in your fare now.",
-      status_badge: "SURGE_WARNING",
-      generated_at: new Date().toISOString()
-    };
+    res = await fetch(`${API_BASE_URL}${path}`, init);
+  } catch {
+    throw new ApiError("Cannot reach the NAPIER backend.", 0, "NETWORK");
   }
+  if (!res.ok) {
+    let message = `Request failed (HTTP ${res.status})`;
+    let code: string | undefined;
+    try {
+      const detail = (await res.json())?.detail;
+      if (typeof detail === "string") message = detail;
+      else if (detail?.message) {
+        message = detail.message;
+        code = detail.code;
+      }
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new ApiError(message, res.status, code);
+  }
+  return (await res.json()) as T;
 }
 
-export async function sendChatMessage(message: string, origin: string = "DEL", destination: string = "BOM") {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/assistant/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, origin, destination })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    console.warn("Assistant fallback active:", err);
-    const targetDate = "2026-10-15";
-    return {
-      markdown_advice: `### ✈️ Assistant Advice for ${origin}-${destination}\n\n**Recommendation:** GREAT TIME TO BOOK\n\n- **24h Projection:** ₹4,750\n- **7d Projection:** ₹5,240\n\nFestival travel demand is accelerating on this route. We recommend securing seats early.`,
-      status_badge: "SURGE_WARNING",
-      recommendation: "GREAT TIME TO BOOK",
-      suggested_queries: [
-        "Should I book today or wait until Friday?",
-        "How much will prices go up around Diwali?",
-        "Which airline offers the best price right now?"
-      ],
-      carrier_links: [
-        { name: "IndiGo", code: "6E", price: 4520, seats_left: 3, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "IndiGo") },
-        { name: "Air India Express", code: "IX", price: 4380, seats_left: 2, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "Air India Express") },
-        { name: "Akasa Air", code: "QP", price: 4470, seats_left: 5, booking_url: buildGoogleFlightsUrl(origin, destination, targetDate, "Akasa Air") }
-      ],
-      ml_summary: {}
-    };
-  }
-}
+export const resolveRoute = (q: string) => request<ResolvedRoute>(`/api/v1/resolve?q=${encodeURIComponent(q)}`);
+
+export const fetchRoutePrediction = (origin: string, destination: string, date: string) =>
+  request<MLPrediction>(`/api/v1/predict/${origin}/${destination}?date=${encodeURIComponent(date)}`);
+
+export const fetchIndexTrends = (route: string, leadTime: number) =>
+  request<{ data: IndexPoint[]; total_datapoints: number }>(
+    `/api/v1/index-trends?route=${encodeURIComponent(route)}&lead_time=${leadTime}`
+  );
+
+export const sendChatMessage = (message: string, origin: string, destination: string, date: string) =>
+  request<ChatResponse>(`/api/v1/assistant/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, origin, destination, date }),
+  });
